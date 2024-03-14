@@ -1,0 +1,221 @@
+
+
+:host > [limit-width] {
+  max-width: var(--content-max-width);
+}
+
+:host > section {
+  margin: 0 auto;
+  padding: 2.5em 2.25em 2em;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+:host([state="active"]) {
+  z-index: 1;
+}
+
+:host([state="active"]) > section {
+  opacity: 1;
+}
+
+ul, ol {
+  margin: 0;
+  padding: 0;
+}
+
+form input,
+form textarea,
+form sl-input::part(input),
+form sl-textarea::part(textarea) {
+  transition: color 0.5s ease;
+}
+
+form[loading] input,
+form[loading] textarea,
+form[loading] sl-input::part(input),
+form[loading] sl-textarea::part(textarea) {
+  color: transparent;
+}
+
+::part(form-control-help-text) {
+  font-size: 0.75em;
+}
+
+sl-input, sl-textarea {
+  margin: 0 0 1em;
+}
+
+*::part(form-control-label) {
+  margin: 0 0 0.4em;
+}
+
+[pressable] * {
+  pointer-events: none;
+}
+
+[flex] {
+  display: flex;
+}
+
+[flex~="center-x"]:not([flex~="column"]) {
+  justify-content: center;
+}
+
+[flex~="center-x"][flex~="column"] {
+  align-items: center;
+}
+
+[flex~="center-y"]:not([flex~="column"]) {
+  align-items: center;
+}
+
+[flex~="center-y"][flex~="column"] {
+  justify-content: center;
+}
+
+[flex~="column"] {
+  flex-direction: column;
+}
+
+[flex~="wrap"] {
+  flex-wrap: wrap;
+}
+
+[flex~="fit"] {
+  flex: 0;
+}
+
+[flex~="expand"] {
+  flex: 1;
+}
+
+[default-content]:only-child {
+  display: flex;
+  flex-direction: column;
+}
+
+*:has(>[default-content]:only-child) {
+  display: flex !important;
+}
+
+[default-content~="cover"] {
+  position: absolute;
+  inset: 0;
+  z-index: 1000;
+  background: #000;
+}
+
+[default-content~="firstrun"] {
+  max-width: 20em;
+  margin: 2em auto 0;
+  padding: 1.5em;
+  text-align: center;
+  border: 4px dashed rgba(255 255 255 / 0.2);
+  border-radius: 7px;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+[default-content~="firstrun"] > :is(svg, sl-icon) {
+  display: block;
+  margin: 0 auto 2rem;
+  font-size: 6em;
+  color: var(--link-color);
+}
+
+[default-content~="clickable"] {
+  cursor: pointer;
+}
+
+[default-content~="clickable"] {
+  transition: background-color 0.25s ease;
+}
+
+[default-content~="clickable"]:hover {
+  background-color: rgba(255 255 255 / 0.075)
+}
+
+.text-logo {
+  font-weight: normal;
+  font-family: var(--logo-font);
+}
+
+.modal-page::part(panel) {
+  height: 100%;
+  max-height: none;
+  width: 100%;
+  max-width: none;
+  box-shadow: none;
+  align-items: center;
+}
+
+.modal-page::part(overlay) {
+  background-color: hsl(240deg 5.26% 14.9%);
+}
+
+.modal-page::part(header),
+.modal-page::part(body),
+.modal-page::part(footer) {
+  width: 100%;
+}
+
+.modal-page::part(header),
+.modal-page::part(footer) {
+  max-width: 900px;
+}
+
+.modal-page::part(header) {
+  position: fixed;
+}
+
+.modal-page::part(title) {
+  padding: 1em 1em 1em 0.4em;
+  order: 1;
+}
+
+.modal-page::part(header-actions) {
+  padding: 0;
+}
+
+.modal-page::part(close-button) {
+  position: relative;
+  font-size: 1.3em;
+  cursor: pointer;
+}
+
+.modal-page::part(close-button):hover {
+  color: var(--sl-color-primary-600);
+}
+
+.modal-page::part(close-button)::before {
+  content: '🡨';
+  position: absolute;
+  left: 50%;
+  background: var(--sl-panel-background-color);
+  transform: translateX(-50%);
+}
+
+.modal-page::part(close-button) > * {
+  display: none;
+}
+
+.modal-page::part(body) {
+  padding-top: 5em;
+}
+
+.modal-page > * {
+  max-width: 810px;
+  margin: 0 auto;
+}
+
+
+#view_header {
+  position: sticky;
+  top: 0;
+  max-width: none;
+  padding: 1.1em 1.2em 1em;
+  background: rgba(44 44 49 / 90%);
+  border-bottom: 1px solid rgba(0 0 0 / 50%);
+  z-index: 1;
+}
