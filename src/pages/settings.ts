@@ -78,25 +78,12 @@ export class PageSettings extends LitElement {
     `
   ]
 
-  @query('#profile_form', true)
-  profileForm;
-
-  @query('#profile_image_input', true)
-  avatarInput;
-
   static properties = {
-    socialData: {
-      type: Object
-    }
-  }
 
-  socialRecord: any;
-  avatarDataUri: any;
-  avatarRecord: any;
+  }
 
   constructor() {
     super();
-    this.initialize();
     this.socialData = {
       displayName: '',
       bio: '',
@@ -104,58 +91,6 @@ export class PageSettings extends LitElement {
     }
   }
 
-  async initialize(){
-    this.socialRecord = await datastore.getSocial() || await datastore.createSocial({ data: this.socialData });
-    this.socialData = await this.socialRecord.cache.json || this.socialData;
-
-    await this.setAvatar(null, false);
-    this.requestUpdate();
-    DOM.skipFrame(() => {
-      this.profileForm.toggleAttribute('loading');
-      DOM.skipFrame(() => this.profileForm.removeAttribute('loading'));
-    });
-  }
-
-  async setAvatar(file, update){
-    let blob = file ? new Blob([file], { type: file.type }) : undefined;
-    try {
-      this.avatarRecord = this.avatarRecord || await datastore.getAvatar();
-      if (blob) {
-        if (this.avatarRecord) await this.avatarRecord.delete();
-        this.avatarRecord = await datastore.createAvatar({ data: blob });
-        const { status } = await this.avatarRecord.send(userDID);
-      }
-      else if (this.avatarRecord) {
-        blob = await this.avatarRecord.data.blob();
-      }
-    }
-    catch(e) {
-      console.log(e);
-    }
-    this.avatarDataUri = blob ? URL.createObjectURL(blob) : undefined;
-    if (update !== false) this.requestUpdate();
-  }
-
-  handleFileChange(e){
-    this.setAvatar(this.avatarInput.files[0]);
-  }
-
-  async saveSocialInfo(e){
-    const formData = new FormData(this.profileForm);
-    for (const entry of formData.entries()) {
-      natives.deepSet(this.socialData, entry[0], entry[1] || undefined);
-    }
-    try {
-      await this.socialRecord.update({ data: this.socialData });
-      const { status } = await this.socialRecord.send(userDID)
-      console.log('send', status, this.socialRecord);
-
-      notify.success('Your profile info was saved')
-    }
-    catch(e) {
-      notify.error('There was a problem saving your profile info')
-    }
-  }
 
 
   render() {

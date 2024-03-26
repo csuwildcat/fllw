@@ -4,7 +4,7 @@ import { customElement, query, property } from 'lit/decorators.js';
 import { ifDefined } from 'lit/directives/if-defined.js';
 
 import { AppContext } from '../utils/context.js';
-
+import { hashToGradient } from '../utils/colors';
 import { DOM, notify, natives } from '../utils/helpers.js';
 import './global.js'
 
@@ -24,13 +24,109 @@ export class ProfileView extends LitElement {
     css`
 
       :host {
-        display: block;
-        max-width: 600px;
+        --avatar-size: 10em;
+        display: flex;
+        justify-content: center;
+        flex-direction: column;
+        max-width: 700px;
+        margin: 0 auto;
+        border-radius: 0.5em;
+        background: var(--grey);
+        box-shadow: var(--block-shadow);
+        overflow: hidden;
         cursor: default;
       }
 
+      #profile_card {
+        position: relative;
+        flex: 1;
+        min-width: 250px;
+        height: fit-content;
+        margin: 0 0 1.5em;
+      }
+
+      #hero, #hero_image {
+        width: 100%;
+      }
+
+      #hero sl-icon-button {
+        position: absolute;
+        top: 1em;
+        right: 1em;
+        background: rgba(0 0 0 / 0.6);
+        border-radius: 100%;
+        cursor: pointer;
+        z-index: 2;
+      }
+
+      #hero_image {
+        height: 12em;
+        background: var(--deterministic-background);
+      }
+
+      #hero_image::part(fallback) {
+        display: none;
+      }
+
+      #avatar {
+        margin-top: calc(var(--avatar-size) / -2);
+        z-index: 1;
+      }
+
+      #avatar_image {
+        margin: 0 auto;
+        background: var(--grey-lighter);
+      }
+
+      #avatar_image {
+        --size: var(--avatar-size);
+        box-sizing: border-box;
+        border: 0.25em solid #fff;
+        border-radius: 100%;
+      }
+
+      #profile_name {
+        margin: 0 auto;
+        text-align: center;
+      }
+
+      #profile_name h3 {
+        margin: 0.5em 0;
+      }
+
+      #profile_name small {
+        color: #777;
+        font-style: italic
+      }
+
+      #tabs {
+        flex: 1;
+      }
+
+      #tabs::part(base) {
+        width: 100%;
+      }
+
       sl-tab-panel {
-        margin-top: 2em;
+        padding: 0.5em 1.5em;
+      }
+
+      #profile_panel section {
+        margin: 0 0 2em;
+      }
+
+      #profile_panel header {
+        margin: 0 0 1.25em;
+        border-bottom: 1px solid rgba(255 255 255 / 0.05);
+      }
+
+      #profile_panel h3 {
+        margin: 0 auto 0.2em 0.5em;
+        font-weight: normal;
+      }
+
+      #profile_panel [empty-text]:empty {
+        text-align: center;
       }
 
       form {
@@ -93,6 +189,7 @@ export class ProfileView extends LitElement {
       .label-on-left::part(form-control-help-text) {
         grid-column-start: 2;
       }
+
     `
   ]
 
@@ -102,6 +199,9 @@ export class ProfileView extends LitElement {
   @property({ type: String, reflect: true })
   panel = 'profile';
 
+  @query('#hero_image', true)
+  heroImage;
+
   @query('#tabs', true)
   tabs;
 
@@ -110,6 +210,9 @@ export class ProfileView extends LitElement {
 
   @query('#profile_image_input', true)
   avatarInput;
+
+  @query('#profile_edit_modal', true)
+  profileEditModal;
 
   static properties = {
     socialData: {
@@ -136,7 +239,8 @@ export class ProfileView extends LitElement {
     if (props.has('panel')) {
       this?.tabs?.show?.(this.panel || 'profile');
     }
-    if (props.has('did')) {
+    if (props.has('did') && this.did) {
+      console.log(this.did);
       this.loadProfile(this.did);
     }
   }
@@ -145,6 +249,7 @@ export class ProfileView extends LitElement {
     this.profileForm.toggleAttribute('loading', true);
     const profileDid = await this.context.profileReady;
     this.isOwner = did === profileDid;
+    this.heroImage.style.setProperty('--deterministic-background', hashToGradient(did.split(':')[2]));
     if (this.isOwner) {
       this.socialRecord = this.context.social;
       this.avatarRecord = this.context.avatar;
@@ -207,41 +312,88 @@ export class ProfileView extends LitElement {
 
   render(){
     return html`
-      <sl-tab-group id="tabs" @sl-tab-show="${e => this.panel = e.detail.name}">
+
+      <section id="profile_card" flex="column fill">
+
+        <div id="hero" @click="${e => e.currentTarget.lastElementChild.click()}">
+          <w5-img id="hero_image" src="${ifDefined(this.avatarDataUri)}"></w5-img>
+          <sl-icon-button name="pencil" size="medium"></sl-icon-button>
+          <input id="hero_input" type="file" accept="image/png, image/jpeg, image/gif" style="display: none"  @change="${this.handleFileChange}" />
+        </div>
+
+        <div id="avatar" @click="${e => e.currentTarget.lastElementChild.click()}">
+          <w5-img id="avatar_image" src="${ifDefined(this.avatarDataUri)}" fallback="person"></w5-img>
+          <input id="avatar_input" type="file" accept="image/png, image/jpeg, image/gif" style="display: none"  @change="${this.handleFileChange}" />
+        </div>
+
+        <div id="profile_name">
+          <h3>${this.socialData.displayName || 'Anon'}</h3>
+          <small>${this.socialData.tagline || ''}</small>
+        </div>
+
+        <footer>
+          ${Object.entries(this.socialData.apps).map(app => {
+            return app[1] ? html`<span>${app[1]}</span>` : nothing;
+          })}
+        </footer>
+      </section>
+
+      <sl-tab-group id="tabs" flex="fill" @sl-tab-show="${e => this.panel = e.detail.name}">
         <sl-tab slot="nav" panel="profile" ?active="${this.panel === 'profile' || nothing}">Profile</sl-tab>
+        <sl-tab slot="nav" panel="posts" ?active="${this.panel === 'posts' || nothing}">Posts</sl-tab>
         ${ !this.isOwner ? nothing : html`
           <sl-tab slot="nav" panel="notifications" ?active="${this.panel === 'notifications' || nothing}">Notifications</sl-tab>
         `}
 
-        <sl-tab-panel name="profile" ?active="${this.panel === 'profile' || nothing}">
-          <form id="profile_form" loading @sl-change="${e => this.saveSocialInfo(e)}" @submit="${e => e.preventDefault()}">
-
-            <div id="profile_image_container" @click="${e => e.currentTarget.lastElementChild.click()}">
-              <w5-img id="profile_image" src="${ifDefined(this.avatarDataUri)}" fallback="person"></w5-img>
-              <small>(click to change image)</small>
-              <input id="profile_image_input" type="file" accept="image/png, image/jpeg, image/gif" style="display: none"  @change="${this.handleFileChange}" />
-            </div>
-
-            <sl-input name="displayName" value="${this.socialData.displayName}" label="Display Name" help-text="A public name visible to everyone"></sl-input>
-            <sl-textarea name="bio" value="${this.socialData.bio}" label="Bio" help-text="Tell people a little about yourself" maxlength="280" rows="4" resize="none"></sl-textarea>
-
-            <h3>Social Accounts</h3>
-            <sl-input label="X (Twitter)" name="apps.x" value="${this.socialData.apps.x}" class="label-on-left"></sl-input>
-            <sl-input label="Instagram" name="apps.instagram" value="${this.socialData.apps.instagram}" class="label-on-left"></sl-input>
-            <sl-input label="Facebook" name="apps.facebook" value="${this.socialData.apps.facebook}" class="label-on-left"></sl-input>
-            <sl-input label="GitHub" name="apps.github" value="${this.socialData.apps.github}" class="label-on-left"></sl-input>
-            <sl-input label="Tidal" name="apps.tidal" value="${this.socialData.apps.tidal}" class="label-on-left"></sl-input>
-            <sl-input label="LinkedIn" name="apps.linkedin" value="${this.socialData.apps.linkedin}" class="label-on-left"></sl-input>
-          </form>
+        <sl-tab-panel id="profile_panel" name="profile" ?active="${this.panel === 'profile' || nothing}">
+          <section>
+            <header flex="center-y">
+              <sl-icon name="person-vcard" size="small"></sl-icon>
+              <h3>About</h3>
+              <sl-icon-button name="pencil" variant="default" size="medium" @click="${ e => this.profileEditModal.show() }"></sl-icon-button>
+            </header>
+            <p class="section-content" empty-text="Tell people about yourself" ?empty="${!this.socialData.bio}">${this.socialData.bio || nothing}</p>
+          </section>  
+        
+          <section>
+            <header flex="center-y">
+              <sl-icon name="briefcase" size="small"></sl-icon>
+              <h3>Work</h3>
+              <sl-icon-button name="plus-lg" variant="default" size="medium"></sl-icon-button>
+            </header>
+            <ul class="section-content" empty-text="Add jobs you've done" ?empty="${!this.socialData.jobs}">${!this.socialData.jobs ? nothing : this.socialData.jobs.map(job => html`<div>${job.title}</div>`)}</ul>
+          </section>  
         </sl-tab-panel>
+
+        <sl-tab-panel name="posts" ?active="${this.panel === 'posts' || nothing}">
+          
+        </sl-tab-panel>
+
         ${ !this.isOwner ? nothing : html`
           <sl-tab-panel name="notifications" ?active="${this.panel === 'notifications' || nothing}">
-            ${this.context.invites.map(invite => {
+            ${[].map(invite => {
               return invite.initialWrite ? nothing : html`<invite-item .invite="${invite}"></invite-item>`
             })}
           </sl-tab-panel>
         `}
+      </sl-tab-group>
 
+      <sl-dialog id="profile_edit_modal" label="Edit Profile" placement="start">
+        <form id="profile_form" loading @sl-change="${e => this.saveSocialInfo(e)}" @submit="${e => e.preventDefault()}">
+
+          <sl-input name="displayName" value="${this.socialData.displayName}" label="Display Name" help-text="A public name visible to everyone"></sl-input>
+          <sl-input name="tagline" value="${this.socialData.tagline}" label="Tagline" help-text="Who are you in one sentence" maxlength="80"></sl-input>
+          <sl-textarea name="bio" value="${this.socialData.bio}" label="Bio" help-text="Tell people a little more about yourself" maxlength="280" rows="4" resize="none"></sl-textarea>
+
+          <h3>Social Accounts</h3>
+          <sl-input label="X (Twitter)" name="apps.x" value="${this.socialData.apps.x}" class="label-on-left"></sl-input>
+          <sl-input label="Instagram" name="apps.instagram" value="${this.socialData.apps.instagram}" class="label-on-left"></sl-input>
+          <sl-input label="Facebook" name="apps.facebook" value="${this.socialData.apps.facebook}" class="label-on-left"></sl-input>
+          <sl-input label="GitHub" name="apps.github" value="${this.socialData.apps.github}" class="label-on-left"></sl-input>
+          <sl-input label="Tidal" name="apps.tidal" value="${this.socialData.apps.tidal}" class="label-on-left"></sl-input>
+          <sl-input label="LinkedIn" name="apps.linkedin" value="${this.socialData.apps.linkedin}" class="label-on-left"></sl-input>
+        </form>
+      </sl-dialog>  
     `
   }
 

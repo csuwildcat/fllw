@@ -56,9 +56,9 @@ export class PageFollows extends LitElement {
 
   constructor() {
     super();
-    follows.initialize().then(() => {
-      this.requestUpdate()
-    });
+    // follows.initialize().then(() => {
+    //   this.requestUpdate()
+    // });
   }
 
   firstUpdated(){

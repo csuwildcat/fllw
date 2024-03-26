@@ -5,12 +5,19 @@
 */
 :root {
   --font-family: 'Lato', serif;
-  --logo-font: 'Micro 5', sans-serif;
+  --logo-font: 'Tajawal', sans-serif;
+  --logo-color: #000;
   --sl-font-sans: var(--font-family);
-  --header-bk: rgb(106 0 116);
-  --link-color: rgb(242, 99, 255) !important;
+  /* --header-bk: #004571; */
+  --header-bk: #fcaf16;
+  /* --link-color: #009dff !important; */
+  --link-color: #ffd856 !important;
   --header-text: #000;
-  --body-bk: #151517;
+  --body-bk: #151518;
+  --block-shadow: 0 1px 3px 0px rgba(0 0 0 / 0.4);
+  --grey: hsl(240 4% 14% / 1);
+  --grey-light: hsl(240 3% 23% / 1);
+  --grey-lighter: hsl(240 3% 35% / 1);
   --header-bar: #2c2e31;
   --content-max-width: 700px;
 }

@@ -28,11 +28,11 @@ class Datastore {
   }
 
   async installProtocols(){
-    console.log(protocols['sync']);
+    console.log(protocols.follow);
     const response = await this.dwn.protocols.query({
       message: {
         filter: {
-          protocol: protocols['sync'].uri
+          protocol: protocols.follow.uri
         }
       }
     });
@@ -249,22 +249,6 @@ class Datastore {
       record.cache.blob = blob;
       record.cache.uri = blob ? URL.createObjectURL(blob) : undefined;
     }
-    return record;
-  }
-
-  async createCommunity(options = {}) {
-    const { record, status } = await this.createProtocolRecord('sync', 'community', Object.assign({
-      dataFormat: 'application/json'
-    }, options));
-    if (options.cache !== false) await cacheJson(record)
-    return record;
-  }
-
-  async getCommunity (id, options = {}) {
-    await this.ready;
-    const { record, status } = await this.readProtocolRecord(id, options)
-    if (status.code > 299) return status;
-    if (options.cache !== false) await cacheJson(record)
     return record;
   }
 

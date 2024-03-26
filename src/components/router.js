@@ -12,18 +12,18 @@ export class AppRouter extends Router {
       enteringRoute.enter = async (path) => {
         await Promise.all(
           routes.reduce((promises, route) => {
-            const leavingComponent = route.component?.();
-            if (route !== enteringRoute && leavingComponent?.getAttribute('state') === 'active') {
+            const leavingComponent = route.component?.(route, path);
+            if (route !== enteringRoute && leavingComponent?.getAttribute('route-state') === 'active') {
               promises.push(leavingComponent?.onPageLeave?.(enteringRoute, path))
             }
-            leavingComponent?.removeAttribute('state');
+            leavingComponent?.removeAttribute('route-state');
             return promises;
           }, [props?.onRouteChange?.(enteringRoute, path)]).concat([
             enteringRoute?.onEnter?.(path),
-            enteringRoute.component?.()?.onPageEnter?.(enteringRoute, path)
+            enteringRoute.component?.(enteringRoute, path, true)?.onPageEnter?.(enteringRoute, path)
           ])
         )
-        enteringRoute.component?.()?.setAttribute?.('state', 'active');
+        enteringRoute.component?.(enteringRoute, path, true)?.setAttribute?.('route-state', 'active');
         enteringRoute?.render?.call(this, path);
       }
       return enteringRoute;
@@ -45,19 +45,19 @@ export class AppRoutes extends Routes {
       enteringRoute.enter = async (path) => {
         await Promise.all(
           routes.reduce((promises, route) => {
-            const leavingComponent = route.component?.();
-            if (route !== enteringRoute && leavingComponent?.getAttribute('state') === 'active') {
+            const leavingComponent = route.component?.(route, path);
+            if (route !== enteringRoute && leavingComponent?.getAttribute('route-state') === 'active') {
               promises.push(leavingComponent?.onPageLeave?.(enteringRoute, path))
             }
-            leavingComponent?.removeAttribute('state');
+            leavingComponent?.removeAttribute('route-state');
             return promises;
           }, [options?.onRouteChange?.(enteringRoute, path)]).concat([
             element?.onChildRouteChange?.(enteringRoute, path),
             enteringRoute?.onEnter?.(path),
-            enteringRoute.component?.()?.onPageEnter?.(enteringRoute, path)
+            enteringRoute.component?.(enteringRoute, path, true)?.onPageEnter?.(enteringRoute, path)
           ])
         )
-        enteringRoute.component?.()?.setAttribute?.('state', 'active');
+        enteringRoute.component?.(enteringRoute, path, true)?.setAttribute?.('route-state', 'active');
         enteringRoute?.render?.call(this, path);
       }
       return enteringRoute;
