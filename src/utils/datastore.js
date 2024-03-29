@@ -187,6 +187,31 @@ class Datastore {
     return record;
   }
 
+  async getCareer(options = {}) {
+    await this.ready;
+    const did = options.from || this.did;
+    if (did !== this.did) {
+      const cached = Datastore.getCache(did, 'career');
+      if (cached) return cached;
+    }
+    const { records, status } = await this.queryProtocolRecords('profile', 'career', options)
+    const latestRecord = records[0];
+    if (!latestRecord) return;
+    if (options.cache !== false) await cacheJson(latestRecord)
+    Datastore.setCache(did, 'career', latestRecord);
+    return latestRecord;
+  }
+
+  async createCareer(options = {}) {
+    const { record, status } = await this.createProtocolRecord('profile', 'career', {
+      published: true,
+      data: options.data,
+      dataFormat: 'application/json'
+    })
+    if (options.cache !== false) await cacheJson(record)
+    return record;
+  }
+
   // getPostsAfter = (options = {}) => {
   //   return this.queryProtocolRecords('profile', 'avatar', Object.assign({
   //     sort: 'createdDescending',

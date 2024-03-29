@@ -14,6 +14,16 @@ const natives = {
   unslash(str) {
     return str.endsWith('/') ? str.slice(0, -1) : str;
   },
+  randomString(length = 32) {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let result = '';
+    const bytes = new Uint8Array(length);
+    crypto.getRandomValues(bytes);
+    bytes.forEach((byte) => {
+        result += chars[byte % chars.length];
+    });
+    return result;
+  },
   url: {
     encode(str){
       return btoa(encodeURIComponent(str)

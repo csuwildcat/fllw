@@ -8,7 +8,8 @@ const initialState = {
   did: null,
   avatar: null,
   social: null,
-  invites: [],
+  career: null,
+  drafts: [],
 };
 
 async function importLatestRecords(did, current, latest){
@@ -34,6 +35,7 @@ export const AppContextMixin = (BaseClass) => class extends BaseClass {
       did: null,
       avatar: null,
       social: null,
+      career: null,
       drafts: new Map(),
     }
   }
@@ -81,11 +83,17 @@ export const AppContextMixin = (BaseClass) => class extends BaseClass {
           bio: '',
           apps: {}
         }, from: did }),
+        await datastore.getCareer({ from: did }) || datastore.createCareer({ data: {
+          jobs: [],
+          skills: [],
+          education: [],
+        }, from: did }),
       ])
       this.updateState({
         did,
         avatar: records[0],
-        social: records[1]
+        social: records[1],
+        career: records[2]
       });
       resolve(this.context.did);
     });
@@ -102,6 +110,14 @@ export const AppContextMixin = (BaseClass) => class extends BaseClass {
     await record.update({ data });
     record.send(this.context.did);
     this.updateState({ social: record });
+    return record;
+  }
+
+  async setCareer(data){
+    const record = this.context.career;
+    await record.update({ data });
+    record.send(this.context.did);
+    this.updateState({ career: record });
     return record;
   }
 

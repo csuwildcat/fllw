@@ -94,14 +94,22 @@ export class AppContainer extends AppContextMixin(SpinnerMixin(LitElement)) {
 
       vaadin-drawer-toggle {
         display: flex;
-        height: var(--lumo-size-m);
-        width: var(--lumo-size-m);
-        font-size: 1.4em;
-        color: #fff;
+        justify-content: flex-start;
+        margin: 0 0 0 -0.3em;
+        width: 1.5em;
+        font-size: 1.3em;
+        color: rgb(0 0 0 / 75%);
+        transition: transform 0.3s ease;
         cursor: pointer;
       }
 
+      vaadin-drawer-toggle:hover {
+        transform: translateX(0.1em);
+      }
+
       vaadin-app-layout::part(navbar) {
+        box-sizing: border-box;
+        height: var(--header-height);
         background: var(--header-bk);
         box-shadow: 0 0 2px 2px rgba(0 0 0 / 25%);
         z-index: 2;
@@ -169,8 +177,7 @@ export class AppContainer extends AppContextMixin(SpinnerMixin(LitElement)) {
         max-width: 100%;
         background: #1a1a1e;
         border-right: 1px solid rgba(255, 255, 255, 0.05);
-        box-shadow: 0px 0 1px 2px rgba(0, 0, 0, 0.25);
-        z-index: 1;
+        box-shadow: 0px 2px 1px 2px rgba(0, 0, 0, 0.25);
       }
 
       #global_nav {
@@ -178,14 +185,13 @@ export class AppContainer extends AppContextMixin(SpinnerMixin(LitElement)) {
         flex-direction: column;
         align-items: center;
         box-sizing: border-box;
-        min-width: var(--communities-list-width);
         margin: 0;
         padding: 0.5em 0;
         font-size: 0.75em;
         z-index: 1;
       }
 
-      #global_nav > a {
+      #global_nav a {
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -199,7 +205,7 @@ export class AppContainer extends AppContextMixin(SpinnerMixin(LitElement)) {
         cursor: pointer;
       }
 
-      #global_nav > a div {
+      #global_nav a div {
         color: rgba(255,255,255,0.8);
       }
       
@@ -208,15 +214,15 @@ export class AppContainer extends AppContextMixin(SpinnerMixin(LitElement)) {
         margin: 0 0 0.2em;
       }
 
-      #global_nav > a:hover {
+      #global_nav a:hover {
         opacity: 1;
       }
 
-      #global_nav > a[active] {
+      #global_nav a[active] {
         opacity: 1;
       }
 
-      #global_nav > a[active] sl-icon {
+      #global_nav a[active] sl-icon {
         color: var(--link-color);
       }
 
@@ -272,6 +278,31 @@ export class AppContainer extends AppContextMixin(SpinnerMixin(LitElement)) {
 
       #first_run_modal add-community {
         height: 350px;
+      }
+
+      
+      @media(max-width: 500px) {
+
+      }
+
+      @media(max-width: 800px) {
+
+        #global_nav {
+          width: 160px;
+          align-items: flex-start;
+          font-size: 1em;
+        }
+
+        #global_nav a {
+          flex-direction: row;
+          margin: 0 0 0.5em;
+        }
+
+        #global_nav a sl-icon {
+          margin: 0 0.5em 0 0;
+          font-size: 1.4em;
+        }
+
       }
 
 
@@ -330,10 +361,6 @@ export class AppContainer extends AppContextMixin(SpinnerMixin(LitElement)) {
 
       #new_member_profile_card {
         margin: 2em 0 0;
-      }
-
-      @media(max-width: 500px) {
-
       }
 
       @keyframes bouncyFadeIn {
@@ -419,6 +446,7 @@ export class AppContainer extends AppContextMixin(SpinnerMixin(LitElement)) {
     did: null,
     avatar: null,
     social: null,
+    career: null,
     drafts: new Map(),
   };
 
@@ -493,7 +521,6 @@ export class AppContainer extends AppContextMixin(SpinnerMixin(LitElement)) {
 
   render() {
    //const inviteCount = this.context.invites.reduce((count, invite) => count + (invite.initialWrite ? 0 : 1), 0);
-   console.log(this.context.did)
     return html`
 
       <vaadin-app-layout id="app_layout">

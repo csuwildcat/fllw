@@ -90,10 +90,7 @@ const profileDefinition = {
     address: {
       dataFormats: ['application/json']
     },
-    job: {
-      dataFormats: ['application/json']
-    },
-    education: {
+    career: {
       dataFormats: ['application/json']
     },
     avatar: {
@@ -106,13 +103,12 @@ const profileDefinition = {
   structure: {
     name: {},
     social: {},
+    career: {},
     avatar: {},
     hero: {},
     messaging: {},
     address: {},
-    phone: {},
-    job: {},
-    education: {}
+    phone: {}
   }
 }
 

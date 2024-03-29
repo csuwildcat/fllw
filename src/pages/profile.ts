@@ -14,7 +14,7 @@ export class PageProfile extends LitElement {
     css`
 
       :host {
-        padding: 4em 2em;
+        padding: clamp(1em, 8vw, 2.75em) clamp(1em, 6vw, 2em);
       }
 
       #placeholder {
@@ -22,9 +22,23 @@ export class PageProfile extends LitElement {
         z-index: -1;
       }
 
+      profile-view {
+        min-height: 100%;
+      }
+
       profile-view[loaded] ~ #placeholder {
         opacity: 0;
         pointer-events: none;
+      }
+
+      @media(max-width: 500px) {
+        :host {
+          padding: 0;
+        }
+
+        profile-view {
+          border-radius: 0;
+        }
       }
 
     `

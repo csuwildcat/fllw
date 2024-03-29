@@ -19,32 +19,29 @@ function hslToHex(h, s, l) {
 }
 
 // Maps a portion of the hash to an HSL range, ensuring vibrant or pastel colors
-function mapHashToHSL(hashPart) {
-  const hue = parseInt(hashPart.substr(0, 2), 16) % 360; // Hue: 0-359
+function mapHashToHSL(hashPart, offset = 0) {
+  // Use the hash part to determine the hue, ensuring full spectrum coverage
+  const hue = (parseInt(hashPart.substr(0, 2), 16) + offset) % 360; // Hue: 0-359
   const saturation = 70 + parseInt(hashPart.substr(2, 2), 16) % 31; // Saturation: 70-100%
   const lightness = 40 + parseInt(hashPart.substr(4, 2), 16) % 21; // Lightness: 40-60%
   return { hue, saturation, lightness };
 }
 
 export function hashToGradient(hash) {
-  // Convert any alphanumeric hash to a hexadecimal representation
   const hexHash = alphanumericToHex(hash).substring(0, 64);
 
-  // Generate first color
+  // Generate first color with a base hue
   const hsl1 = mapHashToHSL(hexHash.substring(0, 6));
   let color1Hex = hslToHex(hsl1.hue, hsl1.saturation, hsl1.lightness);
 
-  // Generate second color with a different hue
-  let hsl2 = mapHashToHSL(hexHash.substring(6, 12));
-  // Ensure the second hue is at least 120 degrees apart to guarantee difference
-  if (Math.abs(hsl2.hue - hsl1.hue) < 120) {
-    hsl2.hue = (hsl1.hue + 120) % 360;
-  }
+  // Generate second color, ensuring a significant hue shift for variety
+  // Calculate an offset to ensure the second color is significantly different
+  const offset = 150; // This ensures we jump to a different segment of the color wheel
+  let hsl2 = mapHashToHSL(hexHash.substring(6, 12), offset);
   let color2Hex = hslToHex(hsl2.hue, hsl2.saturation, hsl2.lightness);
 
-  // Use part of the hash for the gradient angle
+  // Determine the gradient angle
   const angle = parseInt(hexHash.substring(12, 16), 16) % 360;
 
-  // Construct the CSS gradient string
   return `linear-gradient(${angle}deg, ${color1Hex}, ${color2Hex})`;
 }

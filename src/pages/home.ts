@@ -39,6 +39,8 @@ export class PageHome extends LitElement {
       }
 
       #placeholder > sl-icon::part(svg) {
+        height: 100%;
+        width: 100%;
         filter: drop-shadow(rgba(255, 255, 255, 0.5) 0px 1px 0px) drop-shadow(rgba(0, 0, 0, 1) 0px 2px 1px);
       }
     `

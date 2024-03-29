@@ -32,6 +32,11 @@ function getTimeParts(date){
 export default {
   getDateParts,
   getTimeParts,
+  dayYear(_date){
+    const date = _date instanceof Date ? _date : new Date(_date);
+    const {month, day, year} = getDateParts(date);
+    return month + ' ' + year;
+  },
   print(_date, includeTime){
     const date = _date instanceof Date ? _date : new Date(_date);
     const {month, day, year} = getDateParts(date)

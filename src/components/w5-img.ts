@@ -94,6 +94,7 @@ export class W5Image extends LitElement {
     return html`
       <img id="image" part="image" src="${ ifDefined(this.src) }" @load="${e => this.loaded() }"/>
       ${ this?.fallback?.match(/^[a-zA-Z0-9]+:/) ? html`<img part="fallback" src="${this.fallback}">` : html`<sl-icon part="fallback" name="${this.fallback || 'image'}"></sl-icon>` }
+      <slot></slot>
     `;
   }
 }
