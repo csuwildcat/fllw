@@ -30,13 +30,23 @@ export class PageDirectory extends LitElement {
         z-index: -1;
       }
 
-      profile-view[loaded] ~ #placeholder {
+      #profile_view {
+        margin: 3em auto;
+      }
+
+      #profile_view[loaded] ~ #placeholder {
         opacity: 0;
         pointer-events: none;
       }
 
     `
   ]
+
+  @query('#profile_view', true)
+  profileView;
+
+  @query('#did_input', true)
+  didInput;
 
   static properties = {
     did: {
@@ -52,14 +62,14 @@ export class PageDirectory extends LitElement {
 
   }
 
-  lookupProfile(){
-
+  lookupProfile(did){
+    this.profileView.did = this.didInput.value;
   }
 
   render() {
     return html`
       <div id="search_bar" flex="center-y center-x">
-        <sl-input id="did_search_input"
+        <sl-input id="did_input"
                   required
                   size="small"
                   placeholder="Enter a DID to view a profile"
@@ -71,7 +81,7 @@ export class PageDirectory extends LitElement {
         ></sl-input>
         <sl-button variant="primary" size="small" @click="${ e => this.lookupProfile() }" slot="suffix">Find</sl-button>
       </div>
-      <profile-view did="${this.did}"></profile-view>
+      <profile-view id="profile_view" did="${this.did}"></profile-view>
       <div id="placeholder" default-content="cover placeholder">
         <sl-icon name="search"></sl-icon>
         <p>Enter a DID above to view a profile.</p>
