@@ -28,11 +28,11 @@ class Datastore {
   }
 
   async installProtocols(){
-    console.log(protocols.follow);
+    console.log(protocols.social);
     const response = await this.dwn.protocols.query({
       message: {
         filter: {
-          protocol: protocols.follow.uri
+          protocol: protocols.social.uri
         }
       }
     });
@@ -277,136 +277,12 @@ class Datastore {
     return record;
   }
 
-  async setCommunityLogo(blob, community, options = {}) {
-    let record = await this.getCommunityLogo(community.id, Object.assign({ from: community.author }, options));
-    if (record) {
-      await record.update({ data: blob })
-    } else {
-      ({ record } = await datastore.createProtocolRecord('sync', 'community/logo', {
-        data: blob,
-        parentId: community.id,
-        contextId: community.id
-      }))
-    }
-    await record.send(community.author);
-    if (options.cache !== false && record) {
-      record.cache = {
-        blob: await record.data?.blob()?.catch(e => {})?.then(obj => obj),
-        uri: URL.createObjectURL(blob)
-      }
-    }
-    return record
-  }
-
-  async getCommunityLogo(communityId, options = {}) {
-    const { records } = await this.queryProtocolRecords('sync', 'community/logo', Object.assign({ contextId: communityId }, options));
-    if (options.cache !== false && records[0]) {
-      const blob = await records[0].data?.blob()?.catch(e => {})?.then(obj => obj)
-      records[0].cache = {
-        blob,
-        uri: URL.createObjectURL(blob)
-      }
-    }
-    return records[0];
-  }
-
-  async getCommunities (options = {}) {
-    const { records } = await this.queryProtocolRecords('sync', 'community', options)
-    if (options.cache !== false) await cacheJson(records)
-    return records;
-  }
-
-  async createChannel(community, options = {}) {
-    if (community.author !== this.did) {
-      options.role || 'community/admin';
-    }
-    const { record, status } = await this.createProtocolRecord('sync', 'community/channel', Object.assign({
-      store: false,
-      from: community.author,
-      parentId: community.id,
-      contextId: community.id,
-      dataFormat: 'application/json'
-    }, options));
-    const { status: sendStatus } = await record.send(community.author);
-    console.log(sendStatus);
-    if (sendStatus.code > 299) return status;
-    await record.store();
-    if (options.cache !== false) await cacheJson(record)
-    return record;
-  }
-
-  async getChannels (communityId, options = {}) {
-    const { records } = await this.queryProtocolRecords('sync', 'community/channel', Object.assign({ parentId: communityId, contextId: communityId }, options))
-    if (options.cache !== false) await cacheJson(records)
-    console.log(records);
-    return records;
-  }
-
-  async getChannelMessages (channelId, options = {}) {
-    const response = await this.queryProtocolRecords('sync', 'community/channel/message', Object.assign({ parentId: channelId, sort: 'createdAscending' }, options))
-    if (options.cache !== false) await cacheJson(response.records)
-    return response.records;
-  }
-
-  async createChannelMessage(communityId, channelId, options = {}) {
-    const { record, status } = await this.createProtocolRecord('sync', 'community/channel/message', Object.assign({
-      contextId: communityId,
-      parentId: channelId,
-      dataFormat: 'application/json'
-    }, options));
-    if (options.cache !== false) await cacheJson(record)
-    return record;
-  }
-
-  async createConvo(communityId, options = {}) {
-    const { record, status } = await this.createProtocolRecord('sync', 'community/convo', Object.assign({
-      contextId: communityId,
-      parentId: communityId,
-      dataFormat: 'application/json'
-    }, options));
-    if (options.cache !== false) await cacheJson(record)
-    return record;
-  }
-
-  async getConvos (communityId, options = {}) {
-    const { records } = await this.queryProtocolRecords('sync', 'community/convo', Object.assign({ parentId: communityId, contextId: communityId }, options))
-    if (options.cache !== false) await cacheJson(records)
-    return records;
-  }
-
-  async addMember(recipient, communityId, options = {}) {
-    const { record, status } = await this.createProtocolRecord('sync', 'community/member', Object.assign({
-      recipient,
-      parentId: communityId,
-      contextId: communityId,
-      dataFormat: 'application/json'
-    }, options));
-    if (options.cache !== false) await cacheJson(record)
-    return record;
-  }
-
-  async getMember (recipient, communityId, options = {}) {
-    const { records } = await this.queryProtocolRecords('sync', options.protocolPath || 'community/member', Object.assign({ recipient, parentId: communityId }, options))
-    return records[0];
-  }
-
-  async getMembers (communityId, options = {}) {
-    const { records } = await this.queryProtocolRecords('sync', options.protocolPath || 'community/member', Object.assign({ parentId: communityId }, options))
-    if (options.cache !== false) await cacheJson(records)
-    return records;
-  }
-
-  async getAdmins (communityId, options = {}) {
-    const { records } = await this.queryProtocolRecords('sync', options.protocolPath || 'community/admin', Object.assign({ parentId: communityId }, options))
-    return records;
-  }
-
   async sendInvite(recipient, link, options = {}) {
     if (!options.skipCheck) {
       let invite = await this.getActiveInvite(link, { recipient });
       if (invite) return invite;
     }
-    const { record, status: recordStatus } = await this.createProtocolRecord('sync', 'invite', Object.assign({
+    const { record, status: recordStatus } = await this.createProtocolRecord('social', 'invite', Object.assign({
       recipient,
       store: false,
       dataFormat: 'application/json',
@@ -424,55 +300,29 @@ class Datastore {
     }
   }
 
-  async getActiveInvite (link, options = {}) {
-    const { records } = await this.queryProtocolRecords('sync', 'invite', options)
-    let count = records.length;
-    if (count === 0) return null;
-    return await Promise.race(
-      records.map(async record => new Promise(async (resolve, reject) => {
-        if (!record.isDeleted) {
-          await cacheJson(record);
-          if (record.cache.json.link === link) {
-            resolve(record);
-            return;
-          }
+  queryFollows = (options = {}) => this.queryProtocolRecords('social', 'follow', options)
+
+  async toggleFollow(did, follow){
+    await datastore.queryFollows({ recipient: did, latestRecord: true }).then(async (record) => {
+      if (record) {
+        console.log(record);
+        if (follow && record.isDeleted) record.update();
+        else if (!follow) {
+          const { record: deleted } = await this.dwn.records.delete({
+            message: {
+              recordId: record.id,
+            }
+          });
+          record = deleted;
         }
-        if (!--count) reject();
-      }))
-    ).catch(e => null)
+        return record;
+      }
+      else {
+        const { record, status } = await datastore.createProtocolRecord('social', 'follow', { recipient: did, dataFormat: 'application/json' })
+        return record;
+      }
+    })
   }
-
-  async deactivateInvite(id, options = {}){
-
-  }
-
-  async getInvites (options = {}) {
-    const { records } = await this.queryProtocolRecords('sync', 'invite', options)
-    if (options.cache !== false) await cacheJson(records)
-    return records;
-  }
-
-  // async toggleFollow(did, follow){
-  //   await datastore.queryFollows({ recipient: did, latestRecord: true }).then(async (record) => {
-  //     if (record) {
-  //       console.log(record);
-  //       if (follow && record.isDeleted) record.update();
-  //       else if (!follow) {
-  //         const { record: deleted } = await this.dwn.records.delete({
-  //           message: {
-  //             recordId: record.id,
-  //           }
-  //         });
-  //         record = deleted;
-  //       }
-  //       return record;
-  //     }
-  //     else {
-  //       const { record, status } = await datastore.createProtocolRecord('sync', 'follow', { recipient: did, dataFormat: 'application/json' })
-  //       return record;
-  //     }
-  //   })
-  // }
 
 }
 

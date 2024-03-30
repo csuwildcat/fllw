@@ -11,9 +11,9 @@ function addSchemas(config) {
 }
 
 
-const appDefinition = {
+const socialDefinition = {
   published: true,
-  protocol: 'https://areweweb5yet.com',
+  protocol: 'https://areweweb5yet.com/protocols/social',
   types: {
     "aggregators": {
       "dataFormats": ["application/json"]
@@ -65,12 +65,6 @@ const appDefinition = {
   }
 }
 
-export const follow = {
-  uri: appDefinition.protocol,
-  schemas: addSchemas(appDefinition),
-  definition: appDefinition
-}
-
 const profileDefinition = {
   published: true,
   protocol: "https://areweweb5yet.com/protocols/profile",
@@ -116,4 +110,10 @@ export const profile = {
   uri: profileDefinition.protocol,
   schemas: addSchemas(profileDefinition),
   definition: profileDefinition
+}
+
+export const social = {
+  uri: socialDefinition.protocol,
+  schemas: addSchemas(socialDefinition),
+  definition: socialDefinition
 }
