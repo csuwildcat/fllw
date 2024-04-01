@@ -24,6 +24,9 @@ const socialDefinition = {
     "post": {
       "dataFormats": ["application/json"]
     },
+    "article": {
+      "dataFormats": ["application/json"]
+    },
     "media": {
       "dataFormats": ["image/gif", "image/png", "image/jpeg", "video/mp4"]
     },

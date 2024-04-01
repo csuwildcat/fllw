@@ -2,7 +2,7 @@ import { LitElement, html, css, unsafeCSS } from 'lit';
 import { customElement, query, property } from 'lit/decorators.js';
 
 import { ink } from 'ink-mde';
-import * as markdown from  '../utils/markdown.js';
+// import * as markdown from  '../utils/markdown.js';
 
 import { DOM } from '../utils/helpers.js';
 import './global.js'
@@ -27,31 +27,13 @@ export class MarkdownEditor extends LitElement {
     `
   ]
 
-  @property({ type: Boolean })
-  submit = false;
-
   async firstUpdated() {
     this.editor = ink(this.renderRoot.querySelector('#editor'), {
       interface: {
+        toolbar: true,
         lists: true
       }
     });
-
-    console.log(this.editor, this.renderRoot.querySelector('.cm-editor'));
-
-    this.renderRoot.addEventListener('keydown', e => {
-      if (this.submit && e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        const value = this.content?.trim?.();
-        if (value) {
-          DOM.fireEvent(this, 'markdown-editor-submit', {
-            detail: { value }
-          })
-        }
-        return false;
-      }
-    }, true)
-
   }
 
   render() {
@@ -69,10 +51,5 @@ export class MarkdownEditor extends LitElement {
   set content(markdown){
     this.editor.update(markdown || '')
   }
-
-  // #onAfterShow(){
-  //   this.codemirror.refresh();
-  //   this.modal.setAttribute('open', 'complete');
-  // }
 
 }

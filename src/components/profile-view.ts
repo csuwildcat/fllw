@@ -74,7 +74,7 @@ export class ProfileView extends LitElement {
         bottom: 0;
         width: 100%;
         height: var(--avatar-border-size);
-        background: rgba(0 0 0 / 0.5);
+        background: rgba(0 0 0 / 0.25);
         z-index: 2;
       }
 
@@ -120,11 +120,30 @@ export class ProfileView extends LitElement {
         /* font-size: calc(var(--avatar-size) * 0.2); */
       }
 
+      #profile_name sl-copy-button {
+        font-size: 0.65em;
+        opacity: 0.5;
+        transition: opacity 0.3s ease;
+      }
+
+      #profile_name sl-copy-button:hover {
+        opacity: 1;
+      }
+
+
       #profile_name small {
         color: #777;
       }
 
       #tabs {
+        flex: 1;
+      }
+
+      #tabs::part(body),
+      #tabs sl-tab-panel::part(base),
+      #tabs sl-tab-panel[active] {
+        display: flex;
+        flex-direction: column;
         flex: 1;
       }
 
@@ -141,6 +160,15 @@ export class ProfileView extends LitElement {
 
       #tabs::part(active-tab-indicator) {
         bottom: -1px;
+      }
+
+      #tabs sl-tab-panel {
+        flex: 1;
+      }
+
+      #tabs sl-tab-panel [default-content~="placeholder"]{
+        flex: 1;
+        padding: 0 0 5rem;
       }
 
       #profile_panel section {
@@ -299,22 +327,42 @@ export class ProfileView extends LitElement {
     job: {
       type: Object
     },
+    posts: {
+      type: Array
+    },
+    avatar: {
+      type: Object
+    },
+    hero: {
+      type: Object
+    },
     socialData: {
       type: Object
     },
-    avatarDataUri: {
-      type: String
+    careerData: {
+      type: Object
     }
   }
 
-  socialRecord: any;
-  careerRecord: any;
-  avatarRecord: any;
+  avatar: any;
+  hero: any;
+  social: any;
+  career: any;
   socialData: any;
   careerData: any;
 
   constructor() {
     super();
+    this.clearData();
+  }
+
+  clearData(){
+    this.avatar = {};
+    this.hero = {};
+    this.social = {};
+    this.career = {};
+    this.posts = [];
+    this.postCursor = null;
     this.socialData = {
       displayName: '',
       bio: '',
@@ -337,56 +385,54 @@ export class ProfileView extends LitElement {
   }
 
   async loadProfile(did){
-    this.profileForm.toggleAttribute('loading', true);
     const profileDid = await this.context.profileReady;
     this.owner = did === profileDid;
+    this.clearData();
     this.heroImage.style.setProperty('--deterministic-background', hashToGradient(did.split(':')[2]));
     if (this.owner) {
-      this.socialRecord = this.context.social;
-      this.avatarRecord = this.context.avatar;
-      this.careerRecord = this.context.career;
+      this.social = this.context.social;
+      this.avatar = this.context.avatar;
+      this.hero = this.context.hero;
+      this.career = this.context.career;
     }
     else {
       const records = await Promise.all([
         datastore.getSocial({ from: did }),
-        datastore.readAvatar({ from: did }),
+        datastore.readProfileImage('avatar', { from: did }),
+        datastore.readProfileImage('hero', { from: did }),
         datastore.getCareer({ from: did }),
       ])
-      this.socialRecord = records[0];
-      this.avatarRecord = records[1];
-      this.careerRecord = records[2];
+      this.social = records[0];
+      this.avatar = records[1];
+      this.hero = records[2];
+      this.career = records[3];
     }
-    this.socialData = this.socialRecord?.cache?.json || {
+    this.socialData = this.social?.cache?.json || {
       displayName: '',
       bio: '',
       apps: {}
     };
-    this.careerData = this.careerRecord?.cache?.json || {
+    this.careerData = this.career?.cache?.json || {
       jobs: [],
       skills: [],
       education: []
     };
-    console.log(this.careerData);
-    this.avatarDataUri = this.avatarRecord?.cache?.uri;
-    this.profileForm.removeAttribute('loading');
   }
 
-  async handleFileChange(e){
+  async handleFileChange(type, input){
     const profileDid = await this.context.profileReady;
     this.owner = this.did === profileDid;
-    const file = this.avatarInput.files[0];
+    const file = input.files[0];
     if (this.owner) {
-      this.avatarRecord = await this.context.instance.setAvatar(file);
-      this.avatarDataUri = this.avatarRecord.cache.uri;
+      this[type] = await this.context.instance.setProfileImage(type, file);
     }
     else {
-      this.avatarRecord = await datastore.setAvatar(file, this.avatarRecord, this.did);
-      this.avatarDataUri = this.avatarRecord.cache.uri;
+      this[type] = await datastore.setProfileImage(type, file, this.avatar, this.did);
     }
   }
 
   async saveSocialInfo(e){
-    if (this.socialRecord) {
+    if (this.social) {
       const formData = new FormData(this.profileForm);
       for (const entry of formData.entries()) {
         natives.deepSet(this.socialData, entry[0], entry[1] || undefined);
@@ -398,8 +444,8 @@ export class ProfileView extends LitElement {
           var { status } = await record.send(this.did);
         }
         else {
-          await this.socialRecord.update({ data: this.socialData });
-          var { status } = await this.socialRecord.send(this.did)
+          await this.social.update({ data: this.socialData });
+          var { status } = await this.social.send(this.did)
         }
         notify.success('Your profile info was saved')
       }
@@ -416,7 +462,7 @@ export class ProfileView extends LitElement {
   }
 
   async saveJob(closeModal = false){
-    if (this.careerRecord) {
+    if (this.career) {
       if (!this.jobForm.checkValidity()) {
         notify.error('You haven\'t filled out all the required fields');
         return;
@@ -436,8 +482,8 @@ export class ProfileView extends LitElement {
           var { status } = await record.send(this.did);
         }
         else {
-          await this.careerRecord.update({ data: this.careerData });
-          var { status } = await this.careerRecord.send(this.did)
+          await this.career.update({ data: this.careerData });
+          var { status } = await this.career.send(this.did)
         }
         notify.success('Job info saved')
         if (closeModal) this.jobModal.hide();
@@ -446,6 +492,31 @@ export class ProfileView extends LitElement {
         console.log(e)
         notify.error('There was a problem saving this job info')
       }
+    }
+  }
+
+  async loadPosts(){
+    const options = {
+      pagination: {
+        limit: 10,
+      }
+    };
+    if (this.postCursor) {
+      options.pagination.cursor = this.postCursor;
+    }
+    const { cursor, records } = await datastore.queryPosts(options)
+    this.postCursor = cursor;
+    if (records.length) {
+      this.posts = this.posts.concat(records);
+    }
+    this.postsLoaded = true;
+  }
+
+  onTabShow(e){
+    console.log(e);
+    this.panel = e.detail.name;
+    if (this.panel === 'posts' && !this.postsLoaded) {
+      this.loadPosts();
     }
   }
 
@@ -462,32 +533,24 @@ export class ProfileView extends LitElement {
 
       <section id="profile_card" flex="column fill">
 
-        <w5-img id="hero" src="${ifDefined(this.avatarDataUri)}" @click="${e => e.currentTarget.lastElementChild.click()}">
+        <w5-img id="hero" src="${ifDefined(this.hero?.cache?.uri)}">
           <sl-icon-button name="pencil" size="medium"></sl-icon-button>
-          <input id="hero_input" type="file" accept="image/png, image/jpeg, image/gif" style="display: none"  @change="${this.handleFileChange}" />
+          <input id="hero_input" type="file" accept="image/png, image/jpeg, image/gif" style="display: none"  @change="${e => this.handleFileChange('hero', e.target)}" />
         </w5-img>
 
         <div id="avatar_wrapper">
-          <w5-img id="avatar" src="${ifDefined(this.avatarDataUri)}" fallback="${this.owner ? 'person-fill-add' : 'person-fill'}" @click="${e => e.currentTarget.lastElementChild.click()}">
-            <input id="avatar_input" type="file" accept="image/png, image/jpeg, image/gif" style="display: none"  @change="${this.handleFileChange}" />
+          <w5-img id="avatar" src="${ifDefined(this.avatar?.cache?.uri)}" fallback="${this.owner ? 'person-fill-add' : 'person-fill'}" @click="${e => e.currentTarget.lastElementChild.click()}">
+            <input id="avatar_input" type="file" accept="image/png, image/jpeg, image/gif" style="display: none"  @change="${e => this.handleFileChange('avatar', e.target)}" />
           </w5-img>
           <div id="profile_name">
-            <h2>${this.socialData.displayName || 'Anon'}</h2>
+            <h2>${this.socialData.displayName || 'Anon'} <sl-copy-button value="${this.did}" copy-label="Copy this user's DID"></sl-copy-button></h2>
             <small>${this.socialData.tagline || ''}</small>
           </div>
-          <!-- <section id="profile_social">
-          <div class="section-content" empty-text="Add social links" ?empty="${!Object.values(this.socialData.apps || {}).length}">
-            ${Object.entries(this.socialData.apps).map(app => {
-              const name = app[0];
-              return app[1] ? html`<sl-icon-button name="${socialApps[name].icon || name}" target="_blank" href="${socialApps[name].profileUrl + app[1]}"></sl-icon-button>` : nothing;
-            })}
-          </div>
-        </section>  -->
         </div>
 
       </section>
 
-      <sl-tab-group id="tabs" flex="fill" @sl-tab-show="${e => this.panel = e.detail.name}">
+      <sl-tab-group id="tabs" flex="fill" @sl-tab-show="${this.onTabShow}">
         <sl-tab slot="nav" panel="profile" ?active="${this.panel === 'profile' || nothing}">Profile</sl-tab>
         <sl-tab slot="nav" panel="posts" ?active="${this.panel === 'posts' || nothing}">Posts</sl-tab>
         ${ !this.owner ? nothing : html`
@@ -568,8 +631,21 @@ export class ProfileView extends LitElement {
           </section>  
         </sl-tab-panel>
 
-        <sl-tab-panel name="posts" ?active="${this.panel === 'posts' || nothing}">
-          
+        <sl-tab-panel id="posts_panel" name="posts" ?active="${this.panel === 'posts' || nothing}">
+          <ul id="post_list"></ul>
+          <div default-content="placeholder">
+            ${ this.owner ? html`
+              <sl-icon name="file-earmark-plus"></sl-icon>
+              <sl-button>
+                <sl-icon name="plus-lg" slot="prefix"></sl-icon>
+                Write your first post
+              </sl-button>
+              ` : html`
+                <sl-icon name="file-earmark-richtext"></sl-icon>
+                <p>Nothing to see here yet.</p>
+              `
+            }
+          </div>
         </sl-tab-panel>
 
         ${ !this.owner ? nothing : html`
@@ -610,7 +686,7 @@ export class ProfileView extends LitElement {
             <sl-input name="start_date" required value="${this?.job?.start_date}" type="date" label="Start date"></sl-input>
             <sl-input name="end_date" value="${this?.job?.end_date}" type="date" label="End date"></sl-input>
           </div>
-          <sl-textarea name="description" required value="${this?.job?.description}" label="Job Description" help-text="What did you do there?" maxlength="280" rows="4"></sl-textarea>
+          <sl-textarea name="description" required value="${this?.job?.description}" label="Job Description" help-text="What did you do there?" rows="4"></sl-textarea>
         </form>
         <sl-button slot="footer" variant="danger" @click="${ e => this.jobModal.hide() }">Cancel</sl-button>
         <sl-button slot="footer" variant="primary" @click="${ e => this.saveJob(true) }">Save</sl-button>

@@ -7,7 +7,7 @@ setInterval(() => Datastore.cache = {}, 1000 * 60 * 60)
 async function cacheJson(records){
   await Promise.all((Array.isArray(records) ? records : [records]).map(async record => {
     record.cache = {
-      json: await record.data?.json()?.catch(e => {})?.then(obj => obj)
+      json: await record.data?.json?.()?.catch(e => {})?.then(obj => obj)
     }
   }))
 }
@@ -78,32 +78,36 @@ class Datastore {
 
   async queryProtocolRecords(protocol, path, options = {}){
     await this.ready;
-    const params = {
-      message: {
-        filter: {
-          protocol: protocols[protocol].uri,
-          protocolPath: path,
-        }
+    const message = {
+      filter: {
+        protocol: protocols[protocol].uri,
+        protocolPath: path,
       }
-    }
+    };
+    const params = { message }
+
     if (options.from) params.from = options.from;
     if (options.parentId) {
-      params.message.filter.parentId = options.parentId
+      message.filter.parentId = options.parentId
     }
     if (options.contextId) {
-      params.message.filter.contextId = options.contextId
+      message.filter.contextId = options.contextId
     }
     if (options.published !== undefined) {
-      params.message.filter.published = options.published
+      message.filter.published = options.published
     }
     if (options.recipient) {
-      params.message.filter.recipient = options.recipient
+      message.filter.recipient = options.recipient
     }
     if (options.role) {
-      params.message.protocolRole = options.role
+      message.protocolRole = options.role
     }
     if (options.sort || options.latestRecord) {
-      params.message.dateSort = options.latestRecord ? 'createdDescending' : options.sort;
+      message.dateSort = options.latestRecord ? 'createdDescending' : options.sort;
+    }
+
+    if (options.pagination || options.latestRecord) {
+      message.pagination = options.latestRecord ? { limit: 1 } : options.pagination;
     }
 
     return this.dwn.records.query(params);
@@ -162,6 +166,16 @@ class Datastore {
     return response;
   }
 
+  async createSocial(options = {}) {
+    const { record, status } = await this.createProtocolRecord('profile', 'social', {
+      published: true,
+      data: options.data,
+      dataFormat: 'application/json'
+    })
+    if (options.cache !== false) await cacheJson(record)
+    return record;
+  }
+
   async getSocial(options = {}) {
     await this.ready;
     const did = options.from || this.did;
@@ -177,8 +191,66 @@ class Datastore {
     return latestRecord;
   }
 
-  async createSocial(options = {}) {
-    const { record, status } = await this.createProtocolRecord('profile', 'social', {
+  async createProfileImage(type, options = {}) {
+    if (options.data) {
+      options.dataFormat = options.data.type;
+      if (options.data instanceof File) {
+        options.data = new Blob([options.data], { type: options.dataFormat });
+      }
+    }
+    options.published = true;
+    const { record, status } = await this.createProtocolRecord('profile', type, options)
+    return record;
+  }
+
+  async getProfileImage(type, options = {}) {
+    const { records, status } = await this.queryProtocolRecords('profile', type, options);
+    return records[0];
+  }
+
+  async readProfileImage(type, options = {}){
+    await this.ready;
+    const did = options.from = options.from || this.did;
+    if (!options.skipCache) {
+      const cached = Datastore.getCache(did, type);
+      if (cached) return cached;
+    }
+    const record = await this.getAvatar(options);
+    const blob = await record.data.blob();
+    record.cache = {
+      blob: blob,
+      uri: URL.createObjectURL(blob)
+    }
+    Datastore.setCache(did, type, record);
+    return record;
+  }
+
+  async setProfileImage(type, file, _record, from = this.did){
+    let record = _record || await datastore.getProfileImage(type, { from });
+    let blob = file ? new Blob([file], { type: file.type }) : undefined;
+    try {
+      if (blob) {
+        if (record) await record.update({ data: blob });
+        else record = await this.createProfileImage(type, { data: blob, from });
+        const { status } = await record.send(from);
+      }
+      else if (record) {
+        blob = await record.data.blob();
+      }
+    }
+    catch(e) {
+      console.log(e);
+    }
+    if (record) {
+      record.cache = record.cache || {};
+      record.cache.blob = blob;
+      record.cache.uri = blob ? URL.createObjectURL(blob) : undefined;
+    }
+    return record;
+  }
+
+  async createCareer(options = {}) {
+    const { record, status } = await this.createProtocolRecord('profile', 'career', {
       published: true,
       data: options.data,
       dataFormat: 'application/json'
@@ -202,14 +274,10 @@ class Datastore {
     return latestRecord;
   }
 
-  async createCareer(options = {}) {
-    const { record, status } = await this.createProtocolRecord('profile', 'career', {
-      published: true,
-      data: options.data,
-      dataFormat: 'application/json'
-    })
-    if (options.cache !== false) await cacheJson(record)
-    return record;
+ async queryPosts(options = {}){
+    const response = await this.queryProtocolRecords('social', 'post', options);
+    if (options.cache !== false) await cacheJson(response.records);
+    return response;
   }
 
   // getPostsAfter = (options = {}) => {
@@ -218,87 +286,6 @@ class Datastore {
   //     filter: { datePublished: { from: randomDate } },
   //   }, options))
   // }
-
-  async getAvatar(options = {}) {
-    const { records, status } = await this.queryProtocolRecords('profile', 'avatar', options);
-    return records[0];
-  }
-
-  createAvatar = async (options = {}) => {
-    if (options.data) {
-      options.dataFormat = options.data.type;
-      if (options.data instanceof File) {
-        options.data = new Blob([options.data], { type: options.dataFormat });
-      }
-    }
-    options.published = true;
-    const { record, status } = await this.createProtocolRecord('profile', 'avatar', options)
-    return record;
-  }
-
-  async readAvatar(options = {}){
-    await this.ready;
-    const did = options.from = options.from || this.did;
-    if (!options.skipCache) {
-      const cached = Datastore.getCache(did, 'avatar');
-      if (cached) return cached;
-    }
-    const record = await this.getAvatar(options);
-    const blob = await record.data.blob();
-    record.cache = {
-      blob: blob,
-      uri: URL.createObjectURL(blob)
-    }
-    Datastore.setCache(did, 'avatar', record);
-    return record;
-  }
-
-  async setAvatar(file, _record, from = this.did){
-    let record = _record || await datastore.getAvatar({ from });
-    let blob = file ? new Blob([file], { type: file.type }) : undefined;
-    try {
-      if (blob) {
-        if (record) await record.delete();
-        record = await this.createAvatar({ data: blob, from });
-        const { status } = await record.send(from);
-      }
-      else if (record) {
-        blob = await record.data.blob();
-      }
-    }
-    catch(e) {
-      console.log(e);
-    }
-    if (record) {
-      record.cache = record.cache || {};
-      record.cache.blob = blob;
-      record.cache.uri = blob ? URL.createObjectURL(blob) : undefined;
-    }
-    return record;
-  }
-
-  async sendInvite(recipient, link, options = {}) {
-    if (!options.skipCheck) {
-      let invite = await this.getActiveInvite(link, { recipient });
-      if (invite) return invite;
-    }
-    const { record, status: recordStatus } = await this.createProtocolRecord('social', 'invite', Object.assign({
-      recipient,
-      store: false,
-      dataFormat: 'application/json',
-      data: { link }
-    }, options));
-
-    console.log('invite ', record);
-    if (options.cache !== false) await cacheJson(record)
-    const { status: sendStatus } = await record.send(recipient);
-    if (sendStatus.code === 202) {
-      console.log(record);
-      const result = await record.store();
-      console.log(result);
-      return record;
-    }
-  }
 
   queryFollows = (options = {}) => this.queryProtocolRecords('social', 'follow', options)
 
@@ -322,6 +309,29 @@ class Datastore {
         return record;
       }
     })
+  }
+
+  async sendInvite(recipient, link, options = {}) {
+    if (!options.skipCheck) {
+      let invite = await this.getActiveInvite(link, { recipient });
+      if (invite) return invite;
+    }
+    const { record, status: recordStatus } = await this.createProtocolRecord('social', 'invite', Object.assign({
+      recipient,
+      store: false,
+      dataFormat: 'application/json',
+      data: { link }
+    }, options));
+
+    console.log('invite ', record);
+    if (options.cache !== false) await cacheJson(record)
+    const { status: sendStatus } = await record.send(recipient);
+    if (sendStatus.code === 202) {
+      console.log(record);
+      const result = await record.store();
+      console.log(result);
+      return record;
+    }
   }
 
 }

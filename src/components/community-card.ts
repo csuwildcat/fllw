@@ -167,7 +167,7 @@ export class CommunityCard extends SpinnerMixin(LitElement) {
         }
       });
       Promise.all([
-        datastore.readAvatar({ from: did }).then(async record => {
+        datastore.readProfileImage('avatar', { from: did }).then(async record => {
           this.avatarDataUri = record.cache.uri || undefined;
         }),
         datastore.getSocial({ from: did }).then(async record => {

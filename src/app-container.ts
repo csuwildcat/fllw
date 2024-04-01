@@ -24,6 +24,7 @@ import './pages/directory.js';
 import './pages/follows.js';
 import './pages/settings.js';
 import './pages/profile.js';
+import './pages/posts.js';
 
 import { ProfileCard } from './components/profile-card'
 
@@ -275,12 +276,6 @@ export class AppContainer extends AppContextMixin(SpinnerMixin(LitElement)) {
         font-size: 1em;
       }
 
-
-      #first_run_modal add-community {
-        height: 350px;
-      }
-
-      
       @media(max-width: 500px) {
 
       }
@@ -434,11 +429,17 @@ export class AppContainer extends AppContextMixin(SpinnerMixin(LitElement)) {
   @query('#view_members_modal', true)
   viewMembersModal
 
+  @query('#home', true)
+  homePage;
+
   @query('#directory', true)
   directoryPage;
 
   @query('#profile', true)
   profilePage;
+
+  @query('#posts', true)
+  postsPage;
 
   @provide({ context: AppContext })
   context = {
@@ -457,7 +458,7 @@ export class AppContainer extends AppContextMixin(SpinnerMixin(LitElement)) {
 
     this.router = globalThis.router = new AppRouter(this, {
       onRouteChange: async (route, path) => {
-        console.log(route, path)
+        console.log(route, path);
         if (this.initialized) {
           
         }
@@ -473,8 +474,12 @@ export class AppContainer extends AppContextMixin(SpinnerMixin(LitElement)) {
           component: '#profile',
         },
         {
-          path: '/profiles/:did?',
+          path: '/lookup/:did?',
           component: '#directory',
+        },
+        {
+          path: '/profiles/:did/posts/:post?',
+          component: '#posts'
         },
         {
           path: '/follows',
@@ -489,11 +494,14 @@ export class AppContainer extends AppContextMixin(SpinnerMixin(LitElement)) {
   }
 
   async initialize(){
-    this.startSpinner(null, { minimum: 1200, renderImmediate: true });
-    if (localStorage.did) await this.loadProfile(localStorage.did);
-    this.initialized = true;
-    await DOM.skipFrame();
-    this.stopSpinner()
+    return new Promise(async resolve => {
+      this.startSpinner(null, { minimum: 1200, renderImmediate: true });
+      if (localStorage.did) await this.loadProfile(localStorage.did);
+      resolve(true);
+      this.initialized = true;
+      await DOM.skipFrame();
+      this.stopSpinner()
+    });
   }
 
   firstUpdated() {
@@ -559,7 +567,7 @@ export class AppContainer extends AppContextMixin(SpinnerMixin(LitElement)) {
             <sl-icon slot="prefix" name="house"></sl-icon>
             <div>Home</div>
           </a>
-          <a href="/profiles" ?active="${location.pathname.match('profiles')}">
+          <a href="/lookup" ?active="${location.pathname.match('lookup')}">
             <sl-icon slot="prefix" name="user-search"></sl-icon>
             <div>Lookup</div>
           </a>
@@ -576,7 +584,7 @@ export class AppContainer extends AppContextMixin(SpinnerMixin(LitElement)) {
         <main id="pages">
           <page-home id="home" scroll></page-home>
           <page-directory id="directory" scroll></page-directory>     
-          <!-- <page-drafts id="drafts" scroll></page-drafts> -->
+          <page-posts id="posts" scroll></page-posts>
           <page-follows id="follows" scroll></page-follows>
           <page-settings id="settings" scroll></page-settings>
           <page-profile id="profile" did="${this.context.did || nothing}" scroll></page-profile>
@@ -604,7 +612,7 @@ export class AppContainer extends AppContextMixin(SpinnerMixin(LitElement)) {
           <h1 class="text-logo">Fllw</h1>
         </section>
         <section>
-          <add-community></add-community>
+        
         </section>
       </sl-dialog>
 

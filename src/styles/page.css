@@ -144,7 +144,7 @@ sl-button sl-icon {
 
 [default-content~="placeholder"] > :is(svg, sl-icon) {
   display: block;
-  margin: 1rem auto;
+  margin: 1rem auto 1.75rem;
   font-size: 9em;
   max-width: 300px;
   height: auto;

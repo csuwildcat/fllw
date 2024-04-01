@@ -14,16 +14,17 @@ export class AppRouter extends Router {
           routes.reduce((promises, route) => {
             const leavingComponent = route.component?.(route, path);
             if (route !== enteringRoute && leavingComponent?.getAttribute('route-state') === 'active') {
-              promises.push(leavingComponent?.onPageLeave?.(enteringRoute, path))
+              promises.push(leavingComponent?.onRouteLeave?.(enteringRoute, path))
             }
             leavingComponent?.removeAttribute('route-state');
             return promises;
           }, [props?.onRouteChange?.(enteringRoute, path)]).concat([
-            enteringRoute?.onEnter?.(path),
-            enteringRoute.component?.(enteringRoute, path, true)?.onPageEnter?.(enteringRoute, path)
+            enteringRoute?.onEnter?.(path)
           ])
         )
-        enteringRoute.component?.(enteringRoute, path, true)?.setAttribute?.('route-state', 'active');
+        const component = enteringRoute.component?.(enteringRoute, path, true);
+        component?.setAttribute?.('route-state', 'active');
+        component?.onRouteEnter?.(enteringRoute, path);
         enteringRoute?.render?.call(this, path);
       }
       return enteringRoute;
@@ -47,17 +48,18 @@ export class AppRoutes extends Routes {
           routes.reduce((promises, route) => {
             const leavingComponent = route.component?.(route, path);
             if (route !== enteringRoute && leavingComponent?.getAttribute('route-state') === 'active') {
-              promises.push(leavingComponent?.onPageLeave?.(enteringRoute, path))
+              promises.push(leavingComponent?.onRouteLeave?.(enteringRoute, path))
             }
             leavingComponent?.removeAttribute('route-state');
             return promises;
           }, [options?.onRouteChange?.(enteringRoute, path)]).concat([
             element?.onChildRouteChange?.(enteringRoute, path),
-            enteringRoute?.onEnter?.(path),
-            enteringRoute.component?.(enteringRoute, path, true)?.onPageEnter?.(enteringRoute, path)
+            enteringRoute?.onEnter?.(path) 
           ])
         )
-        enteringRoute.component?.(enteringRoute, path, true)?.setAttribute?.('route-state', 'active');
+        const component = enteringRoute.component?.(enteringRoute, path, true);
+        component?.setAttribute?.('route-state', 'active');
+        component?.onRouteEnter?.(enteringRoute, path);
         enteringRoute?.render?.call(this, path);
       }
       return enteringRoute;

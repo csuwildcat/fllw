@@ -7,6 +7,7 @@ const initialState = {
   instance: null,
   did: null,
   avatar: null,
+  hero: null,
   social: null,
   career: null,
   drafts: [],
@@ -34,6 +35,7 @@ export const AppContextMixin = (BaseClass) => class extends BaseClass {
       instance: this,
       did: null,
       avatar: null,
+      hero: null,
       social: null,
       career: null,
       drafts: new Map(),
@@ -77,7 +79,8 @@ export const AppContextMixin = (BaseClass) => class extends BaseClass {
     this.context.did = localStorage.did = await this.getIdentity(did);
     return this.context.profileReady = new Promise(async resolve => {
       const records = await Promise.all([
-        datastore.setAvatar(null, null, did),
+        datastore.setProfileImage('avatar', null, null, did),
+        datastore.setProfileImage('hero', null, null, did),
         await datastore.getSocial({ from: did }) || datastore.createSocial({ data: {
           displayName: '',
           bio: '',
@@ -92,16 +95,17 @@ export const AppContextMixin = (BaseClass) => class extends BaseClass {
       this.updateState({
         did,
         avatar: records[0],
-        social: records[1],
-        career: records[2]
+        hero: records[1],
+        social: records[2],
+        career: records[3]
       });
       resolve(this.context.did);
     });
   }
 
-  async setAvatar(file){
-    const record = await datastore.setAvatar(file, this.context.avatar, this.context.did);
-    this.updateState({ avatar: record });
+  async setProfileImage(type, file){
+    const record = await datastore.setProfileImage(type, file, this.context[type], this.context.did);
+    this.updateState({ [type]: record });
     return record;
   }
 
