@@ -3,6 +3,7 @@ import { Router, Routes } from '@lit-labs/router';
 
 export class AppRouter extends Router {
   constructor(element, props){
+    let activeComponent;
     const routes = props.routes;
     super(element, routes.map((enteringRoute, i, routes) => {
       const selector = enteringRoute.component;
@@ -10,21 +11,15 @@ export class AppRouter extends Router {
         enteringRoute.component = () => element.renderRoot.querySelector(selector);
       }
       enteringRoute.enter = async (path) => {
-        await Promise.all(
-          routes.reduce((promises, route) => {
-            const leavingComponent = route.component?.(route, path);
-            if (route !== enteringRoute && leavingComponent?.getAttribute('route-state') === 'active') {
-              promises.push(leavingComponent?.onRouteLeave?.(enteringRoute, path))
-            }
-            leavingComponent?.removeAttribute('route-state');
-            return promises;
-          }, [props?.onRouteChange?.(enteringRoute, path)]).concat([
-            enteringRoute?.onEnter?.(path)
-          ])
-        )
-        const component = enteringRoute.component?.(enteringRoute, path, true);
-        component?.setAttribute?.('route-state', 'active');
-        component?.onRouteEnter?.(enteringRoute, path);
+        activeComponent?.removeAttribute?.('route-state');
+        await Promise.all([
+          props?.onRouteChange?.(enteringRoute, path)?.onRouteChange?.(enteringRoute, path),
+          activeComponent?.onRouteLeave?.(enteringRoute, path),
+          enteringRoute?.onEnter?.(path) 
+        ])
+        activeComponent = await enteringRoute.component?.(enteringRoute, path, true);
+        activeComponent?.setAttribute?.('route-state', 'active');
+        activeComponent?.onRouteEnter?.(enteringRoute, path);
         enteringRoute?.render?.call(this, path);
       }
       return enteringRoute;
@@ -38,28 +33,23 @@ export class AppRouter extends Router {
 
 export class AppRoutes extends Routes {
   constructor(element, routes, options){
+    let activeComponent;
     super(element, routes.map((enteringRoute, i, routes) => {
       const selector = enteringRoute.component;
       if (typeof selector === 'string') {
         enteringRoute.component = () => element.renderRoot.querySelector(selector);
       }
       enteringRoute.enter = async (path) => {
-        await Promise.all(
-          routes.reduce((promises, route) => {
-            const leavingComponent = route.component?.(route, path);
-            if (route !== enteringRoute && leavingComponent?.getAttribute('route-state') === 'active') {
-              promises.push(leavingComponent?.onRouteLeave?.(enteringRoute, path))
-            }
-            leavingComponent?.removeAttribute('route-state');
-            return promises;
-          }, [options?.onRouteChange?.(enteringRoute, path)]).concat([
-            element?.onChildRouteChange?.(enteringRoute, path),
-            enteringRoute?.onEnter?.(path) 
-          ])
-        )
-        const component = enteringRoute.component?.(enteringRoute, path, true);
-        component?.setAttribute?.('route-state', 'active');
-        component?.onRouteEnter?.(enteringRoute, path);
+        activeComponent?.removeAttribute?.('route-state');
+        await Promise.all([
+          options?.onRouteChange?.(enteringRoute, path),
+          activeComponent?.onRouteLeave?.(enteringRoute, path),
+          element?.onChildRouteChange?.(enteringRoute, path),
+          enteringRoute?.onEnter?.(path) 
+        ])
+        activeComponent = await enteringRoute.component?.(enteringRoute, path, true);
+        activeComponent?.setAttribute?.('route-state', 'active');
+        activeComponent?.onRouteEnter?.(enteringRoute, path);
         enteringRoute?.render?.call(this, path);
       }
       return enteringRoute;

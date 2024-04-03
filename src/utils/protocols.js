@@ -21,29 +21,70 @@ const socialDefinition = {
     "follows": {
       "dataFormats": ["application/json"]
     },
-    "post": {
+    "story": {
       "dataFormats": ["application/json"]
     },
-    "article": {
+    "comment": {
+      "dataFormats": ["application/json"]
+    },
+    "thread": {
+      "dataFormats": ["application/json"]
+    },
+    "reply": {
       "dataFormats": ["application/json"]
     },
     "media": {
       "dataFormats": ["image/gif", "image/png", "image/jpeg", "video/mp4"]
-    },
-    "reply": {
-      "dataFormats": ["application/json"]
     }
   },
   structure: {
     aggregators: {},
     follows: {},
-    post: {
+    story: {
       media: {
         $actions: [
           {
             who: 'author',
-            of: 'post',
-            can: ['create', 'update']
+            of: 'story',
+            can: ['create', 'update', 'delete']
+          }
+        ]
+      },
+      comment: {
+        $actions: [
+          {
+            who: 'anyone',
+            can: ['create', 'update', 'delete']
+          },
+          {
+            who: 'author',
+            of: 'story',
+            can: ['co-delete']
+          }
+        ],
+        media: {
+          $actions: [
+            {
+              who: 'author',
+              of: 'story/comment',
+              can: ['create', 'update', 'delete']
+            },
+            {
+              who: 'author',
+              of: 'story',
+              can: ['co-delete']
+            }
+          ]
+        }
+      }
+    },
+    thread: {
+      media: {
+        $actions: [
+          {
+            who: 'author',
+            of: 'thread',
+            can: ['create', 'update', 'delete']
           }
         ]
       },
@@ -51,15 +92,15 @@ const socialDefinition = {
         $actions: [
           {
             who: 'anyone',
-            can: ['create', 'update']
+            can: ['create', 'update', 'delete']
           }
         ],
         media: {
           $actions: [
             {
               who: 'author',
-              of: 'post/reply',
-              can: ['create', 'update']
+              of: 'thread/reply',
+              can: ['create', 'update', 'delete']
             }
           ]
         }

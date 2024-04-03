@@ -55,8 +55,9 @@ export const AppContextMixin = (BaseClass) => class extends BaseClass {
       did
     });
     if (load) {
-      this.loadProfile(did);
+      await this.loadProfile(did);
     }
+    return did;
   }
 
   async getIdentity(_did){

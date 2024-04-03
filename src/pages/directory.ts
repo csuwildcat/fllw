@@ -1,13 +1,18 @@
 import { LitElement, html, css, unsafeCSS, nothing } from 'lit';
 import { customElement, query, property } from 'lit/decorators.js';
-import { ifDefined } from 'lit/directives/if-defined.js';
+import { consume } from '@lit/context';
 
+import { AppContext } from '../utils/context.js';
 import { DOM, notify, natives } from '../utils/helpers.js';
 
 import PageStyles from  '../styles/page.css';
 
 @customElement('page-directory')
 export class PageDirectory extends LitElement {
+
+  @consume({context: AppContext, subscribe: true})
+  context;
+
   static styles = [
     unsafeCSS(PageStyles),
     css`
@@ -63,7 +68,13 @@ export class PageDirectory extends LitElement {
   }
 
   lookupProfile(did){
-    this.profileView.did = this.didInput.value;
+    did = did || this.didInput.value;
+    if (did === this.context.did) {
+      router.navigateTo(`/profiles/${did}`);
+    }
+    else {
+      this.profileView.did = did
+    }
   }
 
   render() {
@@ -81,7 +92,7 @@ export class PageDirectory extends LitElement {
         ></sl-input>
         <sl-button variant="primary" size="small" @click="${ e => this.lookupProfile() }" slot="suffix">Find</sl-button>
       </div>
-      <profile-view id="profile_view" did="${this.did}"></profile-view>
+      <profile-view id="profile_view" did="${this.did || nothing}"></profile-view>
       <div id="placeholder" default-content="cover placeholder">
         <sl-icon name="search"></sl-icon>
         <p>Enter a DID above to view a profile.</p>

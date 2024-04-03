@@ -56,7 +56,7 @@ export class PageProfile extends LitElement {
 
   render() {
     return html`
-      <profile-view did="${this.did}"></profile-view>
+      <profile-view did="${this.did || nothing}"></profile-view>
     `;
   }
 }

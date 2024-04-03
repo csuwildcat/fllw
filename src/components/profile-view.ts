@@ -26,20 +26,32 @@ export class ProfileView extends LitElement {
     css`
 
       :host {
-        --avatar-size: clamp(5em, 18vw, 9em);
+        --avatar-size: clamp(6em, 18vw, 9em);
         --avatar-border-size: clamp(0.2em, 1vw, 0.4em);
         --block-padding: calc(var(--avatar-size) * 0.2);
+        position: relative;
         display: flex;
         box-sizing: border-box;
         justify-content: center;
         flex-direction: column;
         max-width: 700px;
         margin: 0 auto;
-        border-radius: 0.5em;
         background: var(--grey);
+        border-radius: var(--block-radius);
         box-shadow: var(--block-shadow);
         overflow: hidden;
         cursor: default;
+      }
+
+      :host::before {
+        content: " ";
+        box-sizing: border-box;
+        position: absolute;
+        inset: 0;
+        border-radius: var(--block-radius);
+        box-shadow: 0 1px 0px 1px inset rgba(255 255 255 / 2.5%);
+        pointer-events: none;
+        z-index: 3;
       }
 
       form {
@@ -70,11 +82,12 @@ export class ProfileView extends LitElement {
 
       #hero::after {
         content: " ";
+        box-sizing: border-box;
         position: absolute;
-        bottom: 0;
-        width: 100%;
-        height: var(--avatar-border-size);
-        background: rgba(0 0 0 / 0.25);
+        inset: 0;
+        border-radius: var(--block-radius) var(--block-radius) 0 0;
+        border-bottom: var(--avatar-border-size) solid rgba(0 0 0 / 15%);
+        box-shadow: 0 1px 0px 1px inset rgba(255 255 255 / 3%);
         z-index: 2;
       }
 
@@ -93,16 +106,24 @@ export class ProfileView extends LitElement {
         background: rgba(0 0 0 / 0.6);
         border-radius: 100%;
         cursor: pointer;
-        z-index: 2;
+        z-index: 3;
+      }
+
+      #basic_info {
+        margin: 0 0 0 var(--block-padding);
       }
 
       #avatar_wrapper {
-        margin: 0 0 0 var(--block-padding);
+        margin: 0 0 1.1em;
+      }
+
+      #avatar_wrapper sl-button {
+        margin: 0.75em 0.75em 0 auto;
       }
 
       #avatar {
         --size: var(--avatar-size);
-        margin: calc(var(--avatar-size) * -0.65) 0 0 0;
+        position: absolute;
         background: var(--grey-lighter);
         outline: var(--avatar-border-size) solid rgb(0 0 0 / 15%);
         box-shadow: 0 1px 1px 0px rgba(0 0 0 / 0.6);
@@ -116,7 +137,7 @@ export class ProfileView extends LitElement {
       }
 
       #profile_name h2 {
-        margin: 0.8em 0 0.2em;
+        margin: 0 0 0.2em;
         /* font-size: calc(var(--avatar-size) * 0.2); */
       }
 
@@ -302,6 +323,12 @@ export class ProfileView extends LitElement {
   @property({ type: String, reflect: true })
   panel = 'profile';
 
+  @property({ type: Boolean, reflect: true })
+  loading;
+
+  @property({ type: Boolean, reflect: true, attribute: 'loading-error' })
+  loadingError;
+
   @query('#hero', true)
   heroImage;
 
@@ -316,6 +343,9 @@ export class ProfileView extends LitElement {
 
   @query('#job_form', true)
   jobForm;
+
+  @query('#hero_input', true)
+  heroInput;
 
   @query('#avatar_input', true)
   avatarInput;
@@ -385,38 +415,46 @@ export class ProfileView extends LitElement {
   }
 
   async loadProfile(did){
-    const profileDid = await this.context.profileReady;
-    this.owner = did === profileDid;
-    this.clearData();
-    this.heroImage.style.setProperty('--deterministic-background', hashToGradient(did.split(':')[2]));
-    if (this.owner) {
-      this.social = this.context.social;
-      this.avatar = this.context.avatar;
-      this.hero = this.context.hero;
-      this.career = this.context.career;
+    this.loading = true;
+    try {
+      const profileDid = await this.context.profileReady;
+      this.owner = did === profileDid;
+      this.clearData();
+      this.heroImage.style.setProperty('--deterministic-background', hashToGradient(did.split(':')[2]));
+      if (this.owner) {
+        this.social = this.context.social;
+        this.avatar = this.context.avatar;
+        this.hero = this.context.hero;
+        this.career = this.context.career;
+      }
+      else {
+        const records = await Promise.all([
+          datastore.getSocial({ from: did }),
+          datastore.readProfileImage('avatar', { from: did }),
+          datastore.readProfileImage('hero', { from: did }),
+          datastore.getCareer({ from: did }),
+        ])
+        this.social = records[0];
+        this.avatar = records[1];
+        this.hero = records[2];
+        this.career = records[3];
+      }
+      this.socialData = this.social?.cache?.json || {
+        displayName: '',
+        bio: '',
+        apps: {}
+      };
+      this.careerData = this.career?.cache?.json || {
+        jobs: [],
+        skills: [],
+        education: []
+      };
+      this.loadingError = false;
     }
-    else {
-      const records = await Promise.all([
-        datastore.getSocial({ from: did }),
-        datastore.readProfileImage('avatar', { from: did }),
-        datastore.readProfileImage('hero', { from: did }),
-        datastore.getCareer({ from: did }),
-      ])
-      this.social = records[0];
-      this.avatar = records[1];
-      this.hero = records[2];
-      this.career = records[3];
+    catch(e) {
+      this.loadingError = true;
     }
-    this.socialData = this.social?.cache?.json || {
-      displayName: '',
-      bio: '',
-      apps: {}
-    };
-    this.careerData = this.career?.cache?.json || {
-      jobs: [],
-      skills: [],
-      education: []
-    };
+    this.loading = false;
   }
 
   async handleFileChange(type, input){
@@ -534,25 +572,30 @@ export class ProfileView extends LitElement {
       <section id="profile_card" flex="column fill">
 
         <w5-img id="hero" src="${ifDefined(this.hero?.cache?.uri)}">
-          <sl-icon-button name="pencil" size="medium"></sl-icon-button>
-          <input id="hero_input" type="file" accept="image/png, image/jpeg, image/gif" style="display: none"  @change="${e => this.handleFileChange('hero', e.target)}" />
+          <sl-icon-button name="pencil" size="medium" @click="${e => this.heroInput.click()}"></sl-icon-button>
+          <input id="hero_input" type="file" accept="image/png, image/jpeg, image/gif" style="display: none" @change="${e => this.handleFileChange('hero', this.heroInput)}" />
         </w5-img>
 
-        <div id="avatar_wrapper">
-          <w5-img id="avatar" src="${ifDefined(this.avatar?.cache?.uri)}" fallback="${this.owner ? 'person-fill-add' : 'person-fill'}" @click="${e => e.currentTarget.lastElementChild.click()}">
-            <input id="avatar_input" type="file" accept="image/png, image/jpeg, image/gif" style="display: none"  @change="${e => this.handleFileChange('avatar', e.target)}" />
-          </w5-img>
+        <div id="basic_info">
+          <div id="avatar_wrapper" flex="end">
+            <w5-img id="avatar" src="${ifDefined(this.avatar?.cache?.uri)}" fallback="${this.owner ? 'person-fill-add' : 'person-fill'}" @click="${e => this.avatarInput.click()}">
+              <input id="avatar_input" type="file" accept="image/png, image/jpeg, image/gif" style="display: none" @change="${e => this.handleFileChange('avatar', this.avatarInput)}" />
+            </w5-img>
+            <sl-button size="small" @click="${e => this.profileEditModal.show()}">
+              Edit profile
+            </sl-button>
+          </div>
           <div id="profile_name">
             <h2>${this.socialData.displayName || 'Anon'} <sl-copy-button value="${this.did}" copy-label="Copy this user's DID"></sl-copy-button></h2>
             <small>${this.socialData.tagline || ''}</small>
-          </div>
+          </div> 
         </div>
-
       </section>
 
       <sl-tab-group id="tabs" flex="fill" @sl-tab-show="${this.onTabShow}">
         <sl-tab slot="nav" panel="profile" ?active="${this.panel === 'profile' || nothing}">Profile</sl-tab>
-        <sl-tab slot="nav" panel="posts" ?active="${this.panel === 'posts' || nothing}">Posts</sl-tab>
+        <sl-tab slot="nav" panel="posts" ?active="${this.panel === 'stories' || nothing}">Stories</sl-tab>
+        <sl-tab slot="nav" panel="threads" ?active="${this.panel === 'threads' || nothing}">Threads</sl-tab>
         ${ !this.owner ? nothing : html`
           <sl-tab slot="nav" panel="notifications" ?active="${this.panel === 'notifications' || nothing}">Notifications</sl-tab>
         `}
@@ -635,10 +678,27 @@ export class ProfileView extends LitElement {
           <ul id="post_list"></ul>
           <div default-content="placeholder">
             ${ this.owner ? html`
-              <sl-icon name="file-earmark-plus"></sl-icon>
+              <sl-icon name="file-earmark-richtext"></sl-icon>
               <sl-button>
                 <sl-icon name="plus-lg" slot="prefix"></sl-icon>
-                Write your first post
+                Write your first story
+              </sl-button>
+              ` : html`
+                <sl-icon name="file-earmark-richtext"></sl-icon>
+                <p>Nothing to see here yet.</p>
+              `
+            }
+          </div>
+        </sl-tab-panel>
+
+        <sl-tab-panel id="threads_panel" name="threads" ?active="${this.panel === 'threads' || nothing}">
+          <ul id="post_list"></ul>
+          <div default-content="placeholder">
+            ${ this.owner ? html`
+              <sl-icon name="card-heading"></sl-icon>
+              <sl-button>
+                <sl-icon name="plus-lg" slot="prefix"></sl-icon>
+                Start your first thread
               </sl-button>
               ` : html`
                 <sl-icon name="file-earmark-richtext"></sl-icon>
@@ -662,7 +722,7 @@ export class ProfileView extends LitElement {
 
           <sl-input name="displayName" value="${this.socialData.displayName}" label="Display Name" help-text="A public name visible to everyone"></sl-input>
           <sl-input name="tagline" value="${this.socialData.tagline}" label="What you do" help-text="Your title or personal tagline" maxlength="80"></sl-input>
-          <sl-textarea name="bio" value="${this.socialData.bio}" label="Bio" help-text="Tell people a little more about yourself" maxlength="280" rows="4" resize="none"></sl-textarea>
+          <sl-textarea name="bio" value="${this.socialData.bio}" label="About" help-text="Tell people a little more about yourself" maxlength="280" rows="4" resize="none"></sl-textarea>
 
           <h3>Social Accounts</h3>
           <sl-input label="X (Twitter)" name="apps.x" value="${this.socialData.apps.x}" class="label-on-left"></sl-input>

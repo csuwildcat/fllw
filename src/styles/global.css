@@ -15,6 +15,8 @@
   --link-color: #ffd856 !important;
   --header-text: #000;
   --body-bk: #151518;
+  --block-bk: var(--grey);
+  --block-radius: 0.5em;
   --block-shadow: 0 1px 3px 0px rgba(0 0 0 / 0.4);
   --grey: hsl(240 4% 14% / 1);
   --grey-light: hsl(240 3% 23% / 1);

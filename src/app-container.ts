@@ -111,6 +111,8 @@ export class AppContainer extends AppContextMixin(SpinnerMixin(LitElement)) {
       vaadin-app-layout::part(navbar) {
         box-sizing: border-box;
         height: var(--header-height);
+        min-height: var(--header-height);
+        font-size: cacl(var(--header-height) / 1.3rem);
         background: var(--header-bk);
         box-shadow: 0 0 2px 2px rgba(0 0 0 / 25%);
         z-index: 2;
@@ -420,6 +422,9 @@ export class AppContainer extends AppContextMixin(SpinnerMixin(LitElement)) {
     `
   ]
 
+  @query('#app_layout', true)
+  appLayout;
+
   @query('#profile_card_popup', true)
   profileCardPopup;
 
@@ -446,6 +451,7 @@ export class AppContainer extends AppContextMixin(SpinnerMixin(LitElement)) {
     instance: this,
     did: null,
     avatar: null,
+    hero: null,
     social: null,
     career: null,
     drafts: new Map(),
@@ -454,7 +460,7 @@ export class AppContainer extends AppContextMixin(SpinnerMixin(LitElement)) {
   constructor() {
     super();
 
-    this.initialize();
+    this.#initialize();
 
     this.router = globalThis.router = new AppRouter(this, {
       onRouteChange: async (route, path) => {
@@ -462,7 +468,7 @@ export class AppContainer extends AppContextMixin(SpinnerMixin(LitElement)) {
         if (this.initialized) {
           
         }
-        this.renderRoot.querySelector('#app_layout')?.__closeOverlayDrawer()
+        this?.appLayout?.__closeOverlayDrawer()
       },
       routes: [
         {
@@ -470,12 +476,21 @@ export class AppContainer extends AppContextMixin(SpinnerMixin(LitElement)) {
           component: '#home'
         },
         {
-          path: '/profile',
-          component: '#profile',
+          path: '/profiles/:did?',
+          component: async (route, path) => {
+            await this.initialize;
+            if (path.did === this.context.did) {
+              return this.profilePage;
+            }
+            else {
+              this.directoryPage.did = path.did;
+              return this.directoryPage;
+            }
+          }
         },
         {
-          path: '/lookup/:did?',
-          component: '#directory',
+          path: '/profiles/:did?/posts',
+          component: '#profile'
         },
         {
           path: '/profiles/:did/posts/:post?',
@@ -493,15 +508,22 @@ export class AppContainer extends AppContextMixin(SpinnerMixin(LitElement)) {
     });
   }
 
-  async initialize(){
-    return new Promise(async resolve => {
+  #initialization: Promise<void> | null = null;
+
+  async #initialize(){
+    if (this.#initialization) return this.#initialization;
+    return this.#initialization = new Promise(async resolve => {
       this.startSpinner(null, { minimum: 1200, renderImmediate: true });
       if (localStorage.did) await this.loadProfile(localStorage.did);
-      resolve(true);
+      resolve();
       this.initialized = true;
       await DOM.skipFrame();
       this.stopSpinner()
     });
+  }
+
+  get initialize(){
+    return this.#initialization || this.#initialize();
   }
 
   firstUpdated() {
@@ -545,12 +567,12 @@ export class AppContainer extends AppContextMixin(SpinnerMixin(LitElement)) {
 
         <h1 class="text-logo" slot="navbar">Fllw</h1>
 
-        <sl-icon-button id="notification_button" class="shadow-icon" variant="text" name="bell" slot="navbar" data-count="${globalThis.inviteCount || nothing}" @click="${ e => this.viewUserProfile(null, 'notifications') }"></sl-icon-button>
+        <sl-icon-button id="notification_button" class="shadow-icon" variant="text" name="bell-fill" slot="navbar" data-count="${globalThis.inviteCount || nothing}" @click="${ e => this.viewUserProfile(null, 'notifications') }"></sl-icon-button>
 
         ${
           this.context.did ?
           html`
-            <a href="/profile" slot="navbar">
+            <a href="/profiles/${this.context.did}" slot="navbar">
               <sl-avatar id="user_avatar" image="${this.context?.avatar?.cache?.uri}" label="User avatar"></sl-avatar>
             </a>
           ` :
@@ -567,7 +589,7 @@ export class AppContainer extends AppContextMixin(SpinnerMixin(LitElement)) {
             <sl-icon slot="prefix" name="house"></sl-icon>
             <div>Home</div>
           </a>
-          <a href="/lookup" ?active="${location.pathname.match('lookup')}">
+          <a href="/profiles" ?active="${location.pathname.match('profiles') && !location.pathname.match(`profiles/${this.context.did}`)}">
             <sl-icon slot="prefix" name="user-search"></sl-icon>
             <div>Lookup</div>
           </a>
@@ -594,7 +616,14 @@ export class AppContainer extends AppContextMixin(SpinnerMixin(LitElement)) {
 
       <sl-dialog id="connect_modal" label="Connect" placement="start">
         <section flex="column center-x center-y">
-          <sl-button variant="default" size="large" @click="${ e => this.createIdentity(true) }">
+          <sl-button variant="default" size="large" @click="${ e => {
+            e.target.loading = true;
+            this.createIdentity(true).then(did => {
+              e.target.loading = false;
+              router.navigateTo(`/profiles/${did}`);
+              this.connectModal.hide();
+            }) 
+          }}">
             <sl-icon slot="prefix" name="person-plus"></sl-icon>
             Create a new identity
           </sl-button>

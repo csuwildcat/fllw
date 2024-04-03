@@ -81,6 +81,15 @@ sl-button sl-icon {
   flex-direction: column;
 }
 
+[flex~="end"] {
+  align-items: end;
+}
+
+[flex~="column"][flex~="end"],
+[flex~="column-reverse"][flex~="end"] {
+  justify-content: end;
+}
+
 [flex~="column-reverse"] {
   flex-direction: column-reverse;
 }

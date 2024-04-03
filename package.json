@@ -34,7 +34,7 @@
     "@vaadin/message-list": "24.4.0-alpha12",
     "@vaadin/select": "24.4.0-alpha12",
     "@vaadin/virtual-list": "24.4.0-alpha12",
-    "@web5/api": "0.9.0-alpha-20240322-d987909",
+    "@web5/api": "0.9.0-alpha-20240330-3e79652",
     "buffer": "^6.0.3",
     "bytemd": "^1.21.0",
     "date-fns": "^3.6.0",
