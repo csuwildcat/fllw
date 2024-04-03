@@ -24,7 +24,7 @@ import './pages/directory.js';
 import './pages/follows.js';
 import './pages/settings.js';
 import './pages/profile.js';
-import './pages/posts.js';
+import './pages/story.js';
 
 import { ProfileCard } from './components/profile-card'
 
@@ -443,24 +443,16 @@ export class AppContainer extends AppContextMixin(SpinnerMixin(LitElement)) {
   @query('#profile', true)
   profilePage;
 
-  @query('#posts', true)
-  postsPage;
+  @query('#story', true)
+  storyPage;
 
   @provide({ context: AppContext })
-  context = {
-    instance: this,
-    did: null,
-    avatar: null,
-    hero: null,
-    social: null,
-    career: null,
-    drafts: new Map(),
-  };
+  context;
 
   constructor() {
     super();
 
-    this.#initialize();
+    this.context.initialize = this.#initialize();
 
     this.router = globalThis.router = new AppRouter(this, {
       onRouteChange: async (route, path) => {
@@ -489,12 +481,12 @@ export class AppContainer extends AppContextMixin(SpinnerMixin(LitElement)) {
           }
         },
         {
-          path: '/profiles/:did?/posts',
-          component: '#profile'
+          path: '/profiles/:did?/stories',
+          component: '#story'
         },
         {
-          path: '/profiles/:did/posts/:post?',
-          component: '#posts'
+          path: '/profiles/:did/stories/:story?',
+          component: '#story'
         },
         {
           path: '/follows',
@@ -514,7 +506,12 @@ export class AppContainer extends AppContextMixin(SpinnerMixin(LitElement)) {
     if (this.#initialization) return this.#initialization;
     return this.#initialization = new Promise(async resolve => {
       this.startSpinner(null, { minimum: 1200, renderImmediate: true });
-      if (localStorage.did) await this.loadProfile(localStorage.did);
+      if (localStorage.connected) {
+        await this.loadProfile(localStorage.did);
+      }
+      else {
+        await this.getIdentity() 
+      }
       resolve();
       this.initialized = true;
       await DOM.skipFrame();
@@ -570,14 +567,14 @@ export class AppContainer extends AppContextMixin(SpinnerMixin(LitElement)) {
         <sl-icon-button id="notification_button" class="shadow-icon" variant="text" name="bell-fill" slot="navbar" data-count="${globalThis.inviteCount || nothing}" @click="${ e => this.viewUserProfile(null, 'notifications') }"></sl-icon-button>
 
         ${
-          this.context.did ?
+          this.context.connected ?
           html`
             <a href="/profiles/${this.context.did}" slot="navbar">
               <sl-avatar id="user_avatar" image="${this.context?.avatar?.cache?.uri}" label="User avatar"></sl-avatar>
             </a>
           ` :
           html`
-            <sl-button variant="primary" slot="navbar" @click="${ e => this.connectModal.show() }">
+            <sl-button size="small" slot="navbar" @click="${ e => this.connectModal.show() }">
               <sl-icon slot="prefix" name="box-arrow-in-right"></sl-icon>
               Connect
             </sl-button>
@@ -589,7 +586,7 @@ export class AppContainer extends AppContextMixin(SpinnerMixin(LitElement)) {
             <sl-icon slot="prefix" name="house"></sl-icon>
             <div>Home</div>
           </a>
-          <a href="/profiles" ?active="${location.pathname.match('profiles') && !location.pathname.match(`profiles/${this.context.did}`)}">
+          <a href="/profiles" ?active="${this.router.activeComponent === this.directoryPage}">
             <sl-icon slot="prefix" name="user-search"></sl-icon>
             <div>Lookup</div>
           </a>
@@ -606,7 +603,7 @@ export class AppContainer extends AppContextMixin(SpinnerMixin(LitElement)) {
         <main id="pages">
           <page-home id="home" scroll></page-home>
           <page-directory id="directory" scroll></page-directory>     
-          <page-posts id="posts" scroll></page-posts>
+          <page-story id="story" scroll></page-story>
           <page-follows id="follows" scroll></page-follows>
           <page-settings id="settings" scroll></page-settings>
           <page-profile id="profile" did="${this.context.did || nothing}" scroll></page-profile>
@@ -616,13 +613,12 @@ export class AppContainer extends AppContextMixin(SpinnerMixin(LitElement)) {
 
       <sl-dialog id="connect_modal" label="Connect" placement="start">
         <section flex="column center-x center-y">
-          <sl-button variant="default" size="large" @click="${ e => {
+          <sl-button variant="default" size="large" @click="${ async e => {
             e.target.loading = true;
-            this.createIdentity(true).then(did => {
-              e.target.loading = false;
-              router.navigateTo(`/profiles/${did}`);
-              this.connectModal.hide();
-            }) 
+            const did = await this.loadProfile();
+            e.target.loading = false;
+            router.navigateTo(`/profiles/${did}`);
+            this.connectModal.hide();
           }}">
             <sl-icon slot="prefix" name="person-plus"></sl-icon>
             Create a new identity

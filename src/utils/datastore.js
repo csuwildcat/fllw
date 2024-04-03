@@ -7,7 +7,7 @@ setInterval(() => Datastore.cache = {}, 1000 * 60 * 60)
 async function cacheJson(records){
   await Promise.all((Array.isArray(records) ? records : [records]).map(async record => {
     record.cache = {
-      json: await record.data?.json?.()?.catch(e => {})?.then(obj => obj)
+      json: await record.data?.json?.()?.catch(e => {})?.then(obj => obj || {})
     }
   }))
 }
@@ -128,8 +128,7 @@ class Datastore {
     if (options.role) {
       params.message.protocolRole = options.role
     }
-    const response = await this.dwn.records.read(params);
-    return response;
+    return this.dwn.records.read(params);
   }
 
   async createProtocolRecord(protocol, path, options = {}){
@@ -274,8 +273,29 @@ class Datastore {
     return latestRecord;
   }
 
- async queryPosts(options = {}){
-    const response = await this.queryProtocolRecords('social', 'post', options);
+  async createStory(options = {}) {
+    const { record, status } = await this.createProtocolRecord('social', 'story', {
+      published: false,
+      data: options.data,
+      dataFormat: 'application/json'
+    })
+    if (options.cache !== false) await cacheJson(record)
+    return record;
+  }
+
+  async readStory(id, options = {}) {
+    const { record, status } = await this.readProtocolRecord(id, options)
+    return record;
+  }
+
+  async queryStories(options = {}){
+    const response = await this.queryProtocolRecords('social', 'story', options);
+    if (options.cache !== false) await cacheJson(response.records);
+    return response;
+  }
+
+  async queryThreads(options = {}){
+    const response = await this.queryProtocolRecords('social', 'thread', options);
     if (options.cache !== false) await cacheJson(response.records);
     return response;
   }

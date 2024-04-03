@@ -33,6 +33,7 @@ export const AppContextMixin = (BaseClass) => class extends BaseClass {
     super();
     this.context = {
       instance: this,
+      connected: false,
       did: null,
       avatar: null,
       hero: null,
@@ -42,66 +43,50 @@ export const AppContextMixin = (BaseClass) => class extends BaseClass {
     }
   }
 
-  async createIdentity(load){
+  async getIdentity(_did, loadProfile){
     const { web5, did } = await Web5.connect({
       techPreview: {
         dwnEndpoints: ['http://localhost:3000']
       }
     });
     console.log(did);
-    globalThis.userDID = did;
+    globalThis.userDID = this.context.did = did;
     globalThis.datastore = new Datastore({
       web5,
       did
     });
-    if (load) {
+    if (loadProfile) {
       await this.loadProfile(did);
     }
     return did;
   }
 
-  async getIdentity(_did){
-    const { web5, did } = await Web5.connect({
-      techPreview: {
-        dwnEndpoints: ['http://localhost:3000']
-      }
-    });
-    console.log(did);
-    globalThis.userDID = did;
-    globalThis.datastore = new Datastore({
-      web5,
-      did
+  async loadProfile(did){
+    did = this.context.did = localStorage.did = await this.getIdentity(did);
+    this.context.connected = localStorage.connected = true;
+    const records = await Promise.all([
+      datastore.setProfileImage('avatar', null, null, did),
+      datastore.setProfileImage('hero', null, null, did),
+      await datastore.getSocial({ from: did }) || datastore.createSocial({ data: {
+        displayName: '',
+        bio: '',
+        apps: {}
+      }, from: did }),
+      await datastore.getCareer({ from: did }) || datastore.createCareer({ data: {
+        jobs: [],
+        skills: [],
+        education: [],
+      }, from: did }),
+    ])
+    this.updateState({
+      did,
+      connected: true,
+      avatar: records[0],
+      hero: records[1],
+      social: records[2],
+      career: records[3]
     });
     return did;
-  }
-
-  async loadProfile(did){
-    if (did === this.context.did) return;
-    this.context.did = localStorage.did = await this.getIdentity(did);
-    return this.context.profileReady = new Promise(async resolve => {
-      const records = await Promise.all([
-        datastore.setProfileImage('avatar', null, null, did),
-        datastore.setProfileImage('hero', null, null, did),
-        await datastore.getSocial({ from: did }) || datastore.createSocial({ data: {
-          displayName: '',
-          bio: '',
-          apps: {}
-        }, from: did }),
-        await datastore.getCareer({ from: did }) || datastore.createCareer({ data: {
-          jobs: [],
-          skills: [],
-          education: [],
-        }, from: did }),
-      ])
-      this.updateState({
-        did,
-        avatar: records[0],
-        hero: records[1],
-        social: records[2],
-        career: records[3]
-      });
-      resolve(this.context.did);
-    });
   }
 
   async setProfileImage(type, file){

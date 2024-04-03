@@ -52,7 +52,7 @@ sl-icon::part(svg) {
 }
 
 sl-button sl-icon { 
-  margin-right: -0.4em;
+  margin-right: -0.2em;
 }
 
 *::part(input-field) {

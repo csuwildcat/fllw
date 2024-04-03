@@ -54,6 +54,11 @@ export class ProfileView extends LitElement {
         z-index: 3;
       }
 
+      :host(:not([owner])) .edit-button {
+        visibility: hidden;
+        pointer-events: none;
+      }
+
       form {
         max-width: 600px;
         margin: 0 auto;
@@ -357,7 +362,10 @@ export class ProfileView extends LitElement {
     job: {
       type: Object
     },
-    posts: {
+    stories: {
+      type: Array
+    },
+    threads: {
       type: Array
     },
     avatar: {
@@ -391,8 +399,10 @@ export class ProfileView extends LitElement {
     this.hero = {};
     this.social = {};
     this.career = {};
-    this.posts = [];
-    this.postCursor = null;
+    this.stories = [];
+    this.storiesCursor = null;
+    this.threads = [];
+    this.threadsCursor = null;
     this.socialData = {
       displayName: '',
       bio: '',
@@ -417,8 +427,8 @@ export class ProfileView extends LitElement {
   async loadProfile(did){
     this.loading = true;
     try {
-      const profileDid = await this.context.profileReady;
-      this.owner = did === profileDid;
+      await this.context.initialize;
+      this.owner = did === this.context.did;
       this.clearData();
       this.heroImage.style.setProperty('--deterministic-background', hashToGradient(did.split(':')[2]));
       if (this.owner) {
@@ -458,8 +468,8 @@ export class ProfileView extends LitElement {
   }
 
   async handleFileChange(type, input){
-    const profileDid = await this.context.profileReady;
-    this.owner = this.did === profileDid;
+    await this.context.initialize;
+    this.owner = this.did === this.context.did;
     const file = input.files[0];
     if (this.owner) {
       this[type] = await this.context.instance.setProfileImage(type, file);
@@ -476,8 +486,8 @@ export class ProfileView extends LitElement {
         natives.deepSet(this.socialData, entry[0], entry[1] || undefined);
       }
       try {
-        const profileDid = await this.context.profileReady;
-        if (this.did === profileDid) {
+        await this.context.initialize;
+        if (this.did === this.context.did) {
           const record = await this.context.instance.setSocial(this.socialData);
           var { status } = await record.send(this.did);
         }
@@ -514,8 +524,8 @@ export class ProfileView extends LitElement {
         if (!this.careerData.jobs.includes(this.job)) {
           this.careerData.jobs.push(this.job);
         }
-        const profileDid = await this.context.profileReady;
-        if (this.did === profileDid) {
+        await this.context.initialize;
+        if (this.did === this.context.did) {
           const record = await this.context.instance.setCareer(this.careerData);
           var { status } = await record.send(this.did);
         }
@@ -533,28 +543,27 @@ export class ProfileView extends LitElement {
     }
   }
 
-  async loadPosts(){
+  async loadStories(){
     const options = {
       pagination: {
         limit: 10,
       }
     };
-    if (this.postCursor) {
-      options.pagination.cursor = this.postCursor;
+    if (this.storiesCursor) {
+      options.pagination.cursor = this.storiesCursor;
     }
-    const { cursor, records } = await datastore.queryPosts(options)
-    this.postCursor = cursor;
+    const { cursor, records } = await datastore.queryStories(options)
+    this.storiesCursor = cursor;
     if (records.length) {
-      this.posts = this.posts.concat(records);
+      this.stories = this.stories.concat(records);
     }
-    this.postsLoaded = true;
+    this.storiesLoaded = true;
   }
 
   onTabShow(e){
-    console.log(e);
     this.panel = e.detail.name;
-    if (this.panel === 'posts' && !this.postsLoaded) {
-      this.loadPosts();
+    if (this.panel === 'stories' && !this.storiesLoaded) {
+      this.loadStories();
     }
   }
 
@@ -572,7 +581,7 @@ export class ProfileView extends LitElement {
       <section id="profile_card" flex="column fill">
 
         <w5-img id="hero" src="${ifDefined(this.hero?.cache?.uri)}">
-          <sl-icon-button name="pencil" size="medium" @click="${e => this.heroInput.click()}"></sl-icon-button>
+          <sl-icon-button class="edit-button" name="pencil" size="medium" @click="${e => this.heroInput.click()}"></sl-icon-button>
           <input id="hero_input" type="file" accept="image/png, image/jpeg, image/gif" style="display: none" @change="${e => this.handleFileChange('hero', this.heroInput)}" />
         </w5-img>
 
@@ -581,7 +590,7 @@ export class ProfileView extends LitElement {
             <w5-img id="avatar" src="${ifDefined(this.avatar?.cache?.uri)}" fallback="${this.owner ? 'person-fill-add' : 'person-fill'}" @click="${e => this.avatarInput.click()}">
               <input id="avatar_input" type="file" accept="image/png, image/jpeg, image/gif" style="display: none" @change="${e => this.handleFileChange('avatar', this.avatarInput)}" />
             </w5-img>
-            <sl-button size="small" @click="${e => this.profileEditModal.show()}">
+            <sl-button class="edit-button" size="small" @click="${e => this.profileEditModal.show()}">
               Edit profile
             </sl-button>
           </div>
@@ -594,8 +603,8 @@ export class ProfileView extends LitElement {
 
       <sl-tab-group id="tabs" flex="fill" @sl-tab-show="${this.onTabShow}">
         <sl-tab slot="nav" panel="profile" ?active="${this.panel === 'profile' || nothing}">Profile</sl-tab>
-        <sl-tab slot="nav" panel="posts" ?active="${this.panel === 'stories' || nothing}">Stories</sl-tab>
-        <sl-tab slot="nav" panel="threads" ?active="${this.panel === 'threads' || nothing}">Threads</sl-tab>
+        <sl-tab slot="nav" panel="stories" ?active="${this.panel === 'stories' || nothing}">Stories</sl-tab>
+        <!-- <sl-tab slot="nav" panel="threads" ?active="${this.panel === 'threads' || nothing}">Threads</sl-tab> -->
         ${ !this.owner ? nothing : html`
           <sl-tab slot="nav" panel="notifications" ?active="${this.panel === 'notifications' || nothing}">Notifications</sl-tab>
         `}
@@ -605,7 +614,7 @@ export class ProfileView extends LitElement {
             <header flex="center-y">
               <sl-icon name="person-vcard" size="small"></sl-icon>
               <h3>About</h3>
-              <sl-icon-button name="pencil" variant="default" size="medium" @click="${ e => this.profileEditModal.show() }"></sl-icon-button>
+              <sl-icon-button class="edit-button" name="pencil" variant="default" size="medium" @click="${ e => this.profileEditModal.show() }"></sl-icon-button>
             </header>
             <p class="section-content" empty-text="Tell people about yourself" ?empty="${!this.socialData.bio}">${this.socialData.bio || nothing}</p>
           </section>
@@ -614,7 +623,7 @@ export class ProfileView extends LitElement {
             <header flex="center-y">
               <sl-icon name="at" size="small"></sl-icon>
               <h3>Social</h3>
-              <sl-icon-button name="pencil" variant="default" size="medium" @click="${ e => this.profileEditModal.show() }"></sl-icon-button>
+              <sl-icon-button class="edit-button" name="pencil" variant="default" size="medium" @click="${ e => this.profileEditModal.show() }"></sl-icon-button>
             </header>
             <div class="section-content" empty-text="Add social links" ?empty="${!Object.values(this.socialData.apps || {}).length}">
               ${Object.entries(this.socialData.apps).map(app => {
@@ -628,7 +637,7 @@ export class ProfileView extends LitElement {
             <header flex="center-y">
               <sl-icon name="briefcase" size="small"></sl-icon>
               <h3>Career</h3>
-              <sl-icon-button name="plus-lg" variant="default" size="medium" @click="${ e => this.showJobModal() }"></sl-icon-button>
+              <sl-icon-button class="edit-button" name="plus-lg" variant="default" size="medium" @click="${ e => this.showJobModal() }"></sl-icon-button>
             </header>
             <div class="section-content" empty-text="Where have you worked?" ?empty="${!this.careerData?.jobs?.length}">
               ${
@@ -656,7 +665,7 @@ export class ProfileView extends LitElement {
                         <li class="job" flex>
                           <div flex="column center-x">
                             <img src="https://t3.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=${job.url}&size=128"/>
-                            <sl-icon-button name="pencil" variant="default" size="medium" @click="${ e => this.showJobModal(job.id) }"></sl-icon-button>
+                            ${this.owner && html`<sl-icon-button name="pencil" variant="default" size="medium" @click="${ e => this.showJobModal(job.id) }"></sl-icon-button>`}
                           </div>
                           <div flex="column align-start">
                             <strong>${job?.title}</strong>
@@ -674,12 +683,12 @@ export class ProfileView extends LitElement {
           </section>  
         </sl-tab-panel>
 
-        <sl-tab-panel id="posts_panel" name="posts" ?active="${this.panel === 'posts' || nothing}">
-          <ul id="post_list"></ul>
+        <sl-tab-panel id="stories_panel" name="stories" ?active="${this.panel === 'stories' || nothing}">
+          <ul id="stories_list"></ul>
           <div default-content="placeholder">
             ${ this.owner ? html`
               <sl-icon name="file-earmark-richtext"></sl-icon>
-              <sl-button>
+              <sl-button href="/profiles/${this.did}/stories">
                 <sl-icon name="plus-lg" slot="prefix"></sl-icon>
                 Write your first story
               </sl-button>
@@ -692,7 +701,7 @@ export class ProfileView extends LitElement {
         </sl-tab-panel>
 
         <sl-tab-panel id="threads_panel" name="threads" ?active="${this.panel === 'threads' || nothing}">
-          <ul id="post_list"></ul>
+          <ul id="threads_list"></ul>
           <div default-content="placeholder">
             ${ this.owner ? html`
               <sl-icon name="card-heading"></sl-icon>
