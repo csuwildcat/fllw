@@ -26,6 +26,13 @@ export class PageStory extends LitElement {
         min-height: 100%;
       }
 
+      #header,
+      #editor::part(toolbar) {
+        background: hsl(240deg 4% 14% / 90%);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.01);
+        box-shadow: 0px 1px 0px 1px rgba(0, 0, 0, 0.2);
+      }
+
       #header {
         position: sticky;
         top: 0;
@@ -35,11 +42,10 @@ export class PageStory extends LitElement {
         z-index: 2;
       }
 
-      #header,
-      #editor::part(toolbar) {
-        background: hsl(240deg 4% 14% / 90%);
-        border-bottom: 1px solid rgba(255, 255, 255, 0.01);
-        box-shadow: 0px 1px 0px 1px rgba(0, 0, 0, 0.2);
+      #header > h2 {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
 
       #owner_nav {

@@ -32,6 +32,10 @@ html, body {
   height: 100%;
 }
 
+html.sl-scroll-lock {
+  scrollbar-gutter: auto !important;
+}
+
 body {
   background: var(--body-bk) !important;
 }
