@@ -276,7 +276,7 @@ class Datastore {
   async createStory(options = {}) {
     const { record, status } = await this.createProtocolRecord('social', 'story', {
       published: false,
-      data: options.data,
+      data: options.data || {},
       dataFormat: 'application/json'
     })
     if (options.cache !== false) await cacheJson(record)
@@ -285,6 +285,13 @@ class Datastore {
 
   async readStory(id, options = {}) {
     const { record, status } = await this.readProtocolRecord(id, options)
+    if (status.code > 399) {
+      const error = new Error(status.detail);
+            error.code = status.code;
+            error.detail = status.detail;
+      throw error;
+    }
+    if (options.cache !== false) await cacheJson(record);
     return record;
   }
 

@@ -181,6 +181,7 @@ export class AppContainer extends AppContextMixin(SpinnerMixin(LitElement)) {
         background: #1a1a1e;
         border-right: 1px solid rgba(255, 255, 255, 0.05);
         box-shadow: 0px 2px 1px 2px rgba(0, 0, 0, 0.25);
+        z-index: 2;
       }
 
       #global_nav {
@@ -505,7 +506,7 @@ export class AppContainer extends AppContextMixin(SpinnerMixin(LitElement)) {
   async #initialize(){
     if (this.#initialization) return this.#initialization;
     return this.#initialization = new Promise(async resolve => {
-      this.startSpinner(null, { minimum: 1200, renderImmediate: true });
+      this.startSpinner(null, { minimum: 0, renderImmediate: true });
       if (localStorage.connected) {
         await this.loadProfile(localStorage.did);
       }

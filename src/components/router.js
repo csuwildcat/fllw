@@ -27,7 +27,10 @@ export class AppRouter extends Router {
   navigateTo = (route, state = {}) => {
     history.pushState(state, state.title || '', route)
     this.goto(route);
-  };
+  }
+  replaceState = (route, state = {}) => {
+    history.replaceState(state, state.title || '', route);
+  }
 }
 
 export class AppRoutes extends Routes {

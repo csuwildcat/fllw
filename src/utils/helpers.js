@@ -108,7 +108,7 @@ var DOM = {
   addEventDelegate(type, selector, fn, options = {}){
     let listener = e => {
       let match = e.target.closest(selector);
-      if (match) fn(e, match);
+      if (match && (!options.avoid || !e.target.closest(options.avoid))) fn(e, match);
     }
     (options.container || document).addEventListener(type, listener, options);
     return listener;
@@ -116,25 +116,25 @@ var DOM = {
   removeEventDelegate(type, listener, options = {}){
     (options.container || document).removeEventListener(type, listener);
   },
-  throttle(fn, delay) {
-    let last = 0;
-    let timeout;
+  getQueryParams(url){
+    const params = {};
+    new URLSearchParams(url || location.search).forEach((value, key) => {
+      params[key] ? params[key].push(value) : params[key] = [value];
+    })
+    return params;
+  },
+  debounce(fn, interval) {
+    let timeoutId = null;
+    let lastArgs = null;
+    let lastThis = null;
+    const call = () => {
+      fn.apply(lastThis, lastArgs);
+      timeoutId = null;
+    };
     return function(...args) {
-      return new Promise(resolve => {
-        const now = Date.now();
-        const diff = now - last;
-        clearTimeout(timeout);
-        if (diff >= delay || last === 0) {
-          resolve(fn(...args));
-          last = now;
-        }
-        else {
-          timeout = setTimeout(() => {
-            resolve(fn(...args));
-            last = Date.now();
-          }, delay - diff);
-        }
-      })
+      lastArgs = args; // Capture the latest arguments
+      lastThis = this; // Capture the correct `this` context
+      timeoutId = timeoutId || setTimeout(call, interval);
     };
   }
 }
