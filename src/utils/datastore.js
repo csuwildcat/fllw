@@ -214,7 +214,7 @@ class Datastore {
       const cached = Datastore.getCache(did, type);
       if (cached) return cached;
     }
-    const record = await this.getProfileImage('avatar', options);
+    const record = await this.getProfileImage(type, options);
     const blob = await record.data.blob();
     record.cache = {
       blob: blob,
