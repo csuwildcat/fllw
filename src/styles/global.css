@@ -4,20 +4,24 @@
   Check here https://developer.mozilla.org/en-US/docs/Web/CSS/Using_CSS_custom_properties for more info on using CSS variables.
 */
 :root {
+  --scroll-distance: 0;
   --font-family: 'Lato', serif;
   --logo-font: 'Tajawal', sans-serif;
   --logo-color: #000;
   --sl-font-sans: var(--font-family);
   /* --header-bk: #004571; */
-  --header-height: 3.5rem;
+  --header-height: 3.25rem;
   --header-bk: #fcaf16;
   /* --link-color: #009dff !important; */
+  --nav-width: 4.25rem;
+  --content-height: calc(100vh - var(--header-height));
   --link-color: #ffd856 !important;
   --header-text: #000;
   --body-bk: #151518;
   --block-bk: var(--grey);
   --block-radius: 0.5em;
-  --block-shadow: 0 1px 3px 0px rgba(0 0 0 / 0.4);
+  --block-shadow: 0 0 1px 0 inset rgba(255 255 255 / 10%), 0 1px 3px 0px rgba(0 0 0 / 0.4);
+  /* 0 0 1px 0px inset rgba(255,255,255,0.2) */
   --grey: hsl(240 4% 14% / 1);
   --grey-light: hsl(240 3% 23% / 1);
   --grey-lighter: hsl(240 3% 35% / 1);
@@ -30,6 +34,7 @@ html, body {
   padding: 0;
   margin: 0;
   height: 100%;
+  background: var(--body-bk) !important;
 }
 
 html.sl-scroll-lock {
@@ -37,7 +42,7 @@ html.sl-scroll-lock {
 }
 
 body {
-  background: var(--body-bk) !important;
+  overflow-y: scroll;
 }
 
 .sl-toast-stack {

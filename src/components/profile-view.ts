@@ -6,8 +6,9 @@ import { format, intervalToDuration, formatDuration } from "date-fns";
 
 import { AppContext } from '../utils/context.js';
 import { hashToGradient } from '../utils/colors';
-import { socialApps } from '../utils/content';
+import { socialApps, storyUtils } from '../utils/content';
 import { DOM, notify, natives } from '../utils/helpers.js';
+import { render } from '../utils/markdown.js';
 import './global.js'
 
 import PageStyles from  '../styles/page.css';
@@ -27,7 +28,6 @@ export class ProfileView extends LitElement {
 
       :host {
         --avatar-size: clamp(6em, 18vw, 9em);
-        --avatar-border-size: clamp(0.2em, 1vw, 0.4em);
         --block-padding: calc(var(--avatar-size) * 0.2);
         position: relative;
         display: flex;
@@ -35,23 +35,11 @@ export class ProfileView extends LitElement {
         justify-content: center;
         flex-direction: column;
         max-width: 700px;
-        margin: 0 auto;
         background: var(--grey);
         border-radius: var(--block-radius);
         box-shadow: var(--block-shadow);
         overflow: hidden;
         cursor: default;
-      }
-
-      :host::before {
-        content: " ";
-        box-sizing: border-box;
-        position: absolute;
-        inset: 0;
-        border-radius: var(--block-radius);
-        box-shadow: 0 1px 0px 1px inset rgba(255 255 255 / 2.5%);
-        pointer-events: none;
-        z-index: 3;
       }
 
       :host(:not([owner])) .edit-button {
@@ -83,17 +71,6 @@ export class ProfileView extends LitElement {
         width: 100%;
         height: var(--avatar-size);
         background: var(--deterministic-background);
-      }
-
-      #hero::after {
-        content: " ";
-        box-sizing: border-box;
-        position: absolute;
-        inset: 0;
-        border-radius: var(--block-radius) var(--block-radius) 0 0;
-        border-bottom: var(--avatar-border-size) solid rgba(0 0 0 / 15%);
-        box-shadow: 0 1px 0px 1px inset rgba(255 255 255 / 3%);
-        z-index: 2;
       }
 
       #hero[src] {
@@ -130,7 +107,7 @@ export class ProfileView extends LitElement {
         --size: var(--avatar-size);
         position: absolute;
         background: var(--grey-lighter);
-        outline: var(--avatar-border-size) solid rgb(0 0 0 / 15%);
+        outline: var(--hero-border-size) solid rgb(0 0 0 / 15%);
         box-shadow: 0 1px 1px 0px rgba(0 0 0 / 0.6);
         border-radius: 6px;
         z-index: 2;
@@ -201,13 +178,17 @@ export class ProfileView extends LitElement {
         margin: 0 0 2em;
       }
 
+      #profile_panel section :last-child {
+        margin-bottom: 0;
+      }
+
       :host(:not([owner])) #profile_panel section:has([empty]) {
         display: none;
       }
 
       #profile_panel header {
         margin: 0 0 1em;
-        border-bottom: 1px solid rgba(255 255 255 / 0.05);
+        border-bottom: 2px dotted rgba(255 255 255 / 0.05);
       }
 
       #profile_panel header sl-icon {
@@ -223,6 +204,10 @@ export class ProfileView extends LitElement {
       #profile_panel h3 {
         margin: 0 auto 0.2em 0.5em;
         font-weight: normal;
+      }
+
+      #profile_about .section-content {
+        white-space: pre-wrap;
       }
 
       #profile_panel [empty-text][empty] {
@@ -258,6 +243,7 @@ export class ProfileView extends LitElement {
       .job > div:first-child {
         min-width: 4em;
         margin: 0 1em 0 0;
+        font-size: clamp(0.6rem, 3vw, 1rem);
       }
 
       .job:not(:first-child) > div:first-child img {
@@ -290,6 +276,36 @@ export class ProfileView extends LitElement {
 
       .job p {
         white-space: pre-wrap;
+      }
+
+      /* STORIES */
+
+      #stories_list:has(a) ~ [default-content~="placeholder"]{
+        display: none;
+      }
+
+      #stories_list a {
+        display: flex;
+        position: relative;
+        height: 170px;
+        overflow: hidden;
+        background: #333;
+        margin: 1em 0;
+        padding: 0.6em 1em;
+        overflow: hidden;
+      }
+
+      #stories_list a:after {
+        content: "";
+        display: block;
+        position: absolute;
+        bottom: 0;
+        width: 100%;
+        box-shadow: 0 0 2px 2px #333;
+      }
+
+      #stories_list a .markdown-body > :first-child {
+        margin-top: 0;
       }
 
       .label-on-left {
@@ -580,7 +596,7 @@ export class ProfileView extends LitElement {
 
       <section id="profile_card" flex="column fill">
 
-        <w5-img id="hero" src="${ifDefined(this.hero?.cache?.uri)}">
+        <w5-img id="hero" class="hero" src="${ifDefined(this.hero?.cache?.uri)}">
           <sl-icon-button class="edit-button" name="pencil" size="medium" @click="${e => this.heroInput.click()}"></sl-icon-button>
           <input id="hero_input" type="file" accept="image/png, image/jpeg, image/gif" style="display: none" @change="${e => this.handleFileChange('hero', this.heroInput)}" />
         </w5-img>
@@ -684,7 +700,16 @@ export class ProfileView extends LitElement {
         </sl-tab-panel>
 
         <sl-tab-panel id="stories_panel" name="stories" ?active="${this.panel === 'stories' || nothing}">
-          <ul id="stories_list"></ul>
+          <div id="stories_list">
+            ${
+              this?.stories?.map(story => html`
+                <a href="profiles/${story.author}/stories/${story.id}" flex>
+                  <!-- <h3>${storyUtils.getTitle(story.cache.json.markdown)}</h3> -->
+                  <div>${render(story.cache.json.markdown || '')}</div>
+                </a>
+              `)
+            }
+          </div>
           <div default-content="placeholder">
             ${ this.owner ? html`
               <sl-icon name="file-earmark-richtext"></sl-icon>
@@ -731,7 +756,7 @@ export class ProfileView extends LitElement {
 
           <sl-input name="displayName" value="${this.socialData.displayName}" label="Display Name" help-text="A public name visible to everyone"></sl-input>
           <sl-input name="tagline" value="${this.socialData.tagline}" label="What you do" help-text="Your title or personal tagline" maxlength="80"></sl-input>
-          <sl-textarea name="bio" value="${this.socialData.bio}" label="About" help-text="Tell people a little more about yourself" maxlength="280" rows="4" resize="none"></sl-textarea>
+          <sl-textarea name="bio" value="${this.socialData.bio}" label="About" help-text="Tell people a little more about yourself" rows="4" resize="none"></sl-textarea>
 
           <h3>Social Accounts</h3>
           <sl-input label="X (Twitter)" name="apps.x" value="${this.socialData.apps.x}" class="label-on-left"></sl-input>

@@ -87,6 +87,9 @@ class Datastore {
     const params = { message }
 
     if (options.from) params.from = options.from;
+    if (options.recordId) {
+      message.filter.recordId = options.recordId
+    }
     if (options.parentId) {
       message.filter.parentId = options.parentId
     }
@@ -132,19 +135,18 @@ class Datastore {
   }
 
   async createProtocolRecord(protocol, path, options = {}){
-    await this.ready;
+    await this.ready;;
     const params = {
       message: {
         protocol: protocols[protocol].uri,
-        protocolPath: path,
-        schema: protocols[protocol][path.split('/').pop()]
+        protocolPath: path
       }
     }
     const schema = protocols[protocol].schemas[path.split('/').pop()];
     if (schema) params.message.schema = schema;
     if (options.from) params.from = options.from;
     if (options.store === false) params.store = options.store;
-    if (options.parentId) params.message.parentId = options.parentId;
+    if (options.parentContextId) params.message.parentContextId = options.parentContextId;
     if (options.contextId) params.message.contextId = options.contextId;
     if (options.data) params.data = options.data;
     else if (options.dataFormat === 'application/json') {
@@ -156,7 +158,7 @@ class Datastore {
     if (options.role) params.message.protocolRole = options.role;
     const response = await this.dwn.records.create(params);
     console.log('create status', response.status);
-    if (options.store !== false) await response.record.send(this.did).then(e => {
+    if (options.store !== false) await response.record.send(options.from || this.did).then(e => {
       console.log('sent success', response.record);
     }).catch(e => {
       console.log('send error', e)
@@ -299,6 +301,80 @@ class Datastore {
     const response = await this.queryProtocolRecords('social', 'story', options);
     if (options.cache !== false) await cacheJson(response.records);
     return response;
+  }
+
+  async createStoryMedia(story, options = {}) {
+    if (options.data) {
+      options.dataFormat = options.data.type;
+      if (options.data instanceof File) {
+        options.data = new Blob([options.data], { type: options.dataFormat });
+      }
+    }
+    options.published = true;
+    options.parentContextId = story.id;
+    const { record, status } = await this.createProtocolRecord('social', 'story/media', options)
+    return record;
+  }
+
+  async readStoryMedia(id, options = {}) {
+    const { record, status } = await this.readProtocolRecord(id, options)
+    if (status.code > 399) {
+      const error = new Error(status.detail);
+            error.code = status.code;
+            error.detail = status.detail;
+      throw error;
+    }
+    if (options.cache !== false) {
+      const blob = await record.data.blob();
+      record.cache = {
+        blob: blob,
+        uri: URL.createObjectURL(blob)
+      }
+    }
+    return record;
+  }
+
+  async setStoryHero(story, options = {}) {
+    if (options.data) {
+      options.dataFormat = options.data.type;
+      if (options.data instanceof File) {
+        options.data = new Blob([options.data], { type: options.dataFormat });
+      }
+    }
+    options.published = true;
+    let hero = story._hero;
+    console.log(hero);
+    let data = story.cache.json;
+    const heroId = data.hero;
+    if (hero || heroId) {
+      if (!hero){
+        let response = await this.queryProtocolRecords('social', 'story/media', {
+          recordId: heroId
+        });
+        hero = response.record;
+      }
+      const response = await hero.update({ data: options.data });
+      console.log(response);
+      var { status } = hero.send(story.author);
+    }
+    else {
+      options.parentContextId = story.id;
+      const response = await this.createProtocolRecord('social', 'story/media', options);
+      hero = response.record;
+    }
+    const blob = await hero.data.blob();
+    hero.cache = {
+      blob: blob,
+      uri: URL.createObjectURL(blob)
+    }
+    if (heroId !== hero.id) {
+      data.hero = hero.id;
+      console.log(data);
+      await story.update({ data });
+      var response = await story.send(story.author);
+      console.log(response);
+    }
+    return story._hero = hero;
   }
 
   async queryThreads(options = {}){

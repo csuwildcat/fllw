@@ -18,7 +18,6 @@ export class MarkdownEditor extends LitElement {
         --border-color: #38383b;
         --border-width: 2px;
         --border: var(--border-width) solid var(--border-color);
-        --editor-padding: 1em;
       }
       
       #editor {
@@ -30,25 +29,27 @@ export class MarkdownEditor extends LitElement {
         border: var(--border);
       }
 
-      .ink-mde-editor {
+      .ink-mde .ink-mde-editor {
         cursor: text;
-        padding: var(--editor-padding);
+        padding: 0;
+        align-items: center;
       }
 
-      .ink-mde-toolbar {
+      .ink-mde .ink-mde-toolbar {
         max-width: 100vw;
-        overflow: auto;
+        align-items: center;
+        overflow: hidden;
       }
 
       .ink-mde .ink-mde-toolbar .ink-mde-container {
         gap: 0;
       }
       
-      .cm-editor {
+      .ink-mde .cm-editor {
         outline: none;
       }
 
-      .cm-focused {
+      .ink-mde .cm-focused {
         outline: none !important;
       }
 
@@ -60,6 +61,14 @@ export class MarkdownEditor extends LitElement {
 
       .ink-mde .ink-mde-details {
         background: var(--border-color);
+      }
+
+      @media(max-width: 430px) {
+        .ink-mde .ink-mde-toolbar {
+          position: sticky;
+          bottom: 0;
+          order: 2;
+        }
       }
 
     `
@@ -74,6 +83,7 @@ export class MarkdownEditor extends LitElement {
     this.editor = ink(editorElement, {
       doc: this._content || '',
       interface: {
+        attribution: false,
         toolbar: true,
         lists: true
       },
@@ -97,8 +107,21 @@ export class MarkdownEditor extends LitElement {
       },
     });
 
-    editorElement.querySelector('.cm-editor').setAttribute('part', 'edit-area');
-    editorElement.querySelector('.ink-mde-toolbar').setAttribute('part', 'toolbar');
+    const toolbar = editorElement.querySelector('.ink-mde-toolbar');
+    const body = editorElement.querySelector('.ink-mde-editor');
+    const textarea = editorElement.querySelector('.cm-editor');
+
+    const beforeContent = document.createElement('slot');
+          beforeContent.name = 'before-content'
+    const afterContent = document.createElement('slot');
+          afterContent.name = 'after-content'
+
+    toolbar.setAttribute('part', 'toolbar');
+    body.setAttribute('part', 'body'); 
+    textarea.setAttribute('part', 'textarea');
+
+    body.prepend(beforeContent);
+    body.append(afterContent);
 
     DOM.addEventDelegate('click', '.ink', e => this.focus(), {
       container: editorElement,
@@ -122,7 +145,7 @@ export class MarkdownEditor extends LitElement {
 
   set content(markdown){
     if (this.editor) {
-      this._content = null;
+      delete this._content;
       this.editor.update(markdown || '')
     }
     else this._content = markdown;

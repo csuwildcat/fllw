@@ -123,7 +123,7 @@ var DOM = {
     })
     return params;
   },
-  debounce(fn, interval) {
+  debounce(fn, interval = 50) {
     let timeoutId = null;
     let lastArgs = null;
     let lastThis = null;

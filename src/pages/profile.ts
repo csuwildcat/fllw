@@ -14,7 +14,8 @@ export class PageProfile extends LitElement {
     css`
 
       :host {
-        padding: clamp(1em, 8vw, 2.75em) clamp(1em, 6vw, 2em);
+        display: flex;
+        justify-content: center;
       }
 
       #placeholder {
@@ -23,7 +24,8 @@ export class PageProfile extends LitElement {
       }
 
       profile-view {
-        min-height: 100%;
+        flex: 1;
+        margin: clamp(1.25em, 6vw, 2.75em) clamp(1em, 4vw, 2em);
       }
 
       profile-view[loaded] ~ #placeholder {
@@ -37,6 +39,8 @@ export class PageProfile extends LitElement {
         }
 
         profile-view {
+          margin: 0;
+          min-height: var(--content-height);
           border-radius: 0;
         }
       }

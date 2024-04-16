@@ -29,6 +29,12 @@ import './pages/story.js';
 import { ProfileCard } from './components/profile-card'
 
 const BASE_URL: string = (import.meta.env.BASE_URL).length > 2 ? (import.meta.env.BASE_URL).slice(1, -1) : (import.meta.env.BASE_URL);
+const rootStyles = document.documentElement.style;
+function setScrollFactor(){
+  rootStyles.setProperty('--scroll-distance', window.scrollY);
+}
+
+window.addEventListener('scroll', () => requestAnimationFrame(setScrollFactor));
 
 document.addEventListener('profile-card-popup', e => {
   const anchor = e.detail.anchor;
@@ -56,31 +62,46 @@ export class AppContainer extends AppContextMixin(SpinnerMixin(LitElement)) {
       :host {
         display: flex;
         flex-direction: column;
-        height: 100%;
       }
 
-      main {
-        position: relative;
-        height: 100%;
-      }
-
-      main > * {
-        position: absolute;
+      #app_header {
+        position: sticky;
+        top: 0;
         box-sizing: border-box;
-        height: 100%;
         width: 100%;
-        opacity: 0;
-        background-color: var(--body-bk) !important;
-        visibility: hidden;
-        transition: visibility 0.3s, opacity 0.3s ease;
-        overflow-y: scroll;
-        z-index: -1;
+        height: var(--header-height);
+        min-height: var(--header-height);
+        padding: 0 0.5em 0 0;
+        font-size: calc(var(--header-height) / 1.3rem);
+        background: var(--header-bk);
+        box-shadow: 0 0 2px 2px rgba(0 0 0 / 25%);
+        z-index: 2;
       }
 
-      main > [route-state="active"] {
-        opacity: 1;
-        z-index: 0;
-        visibility: visible;
+      #global_nav_toggle {
+        display: none;
+        position: absolute;
+        align-items: center;
+        height: 100%;
+        font-size: 1.55em;
+        cursor: pointer;
+      }
+
+      #global_nav_toggle::part(svg) {
+        color: rgba(0 0 0 / 65%);
+        transform: translateX(-0.4em);
+        transition: transform 0.3s ease, color 0.3s ease;
+      }
+
+      #global_nav_toggle:hover::part(svg) {
+        color: rgba(0 0 0 / 100%);
+        transform: translateX(-0.3em);
+      }
+
+      #app_header .svg-logo {
+        font-size: 1.9em;
+        margin: 0 0 0 0.6em;
+        color: var(--logo-color);
       }
 
       h1 {
@@ -93,55 +114,17 @@ export class AppContainer extends AppContextMixin(SpinnerMixin(LitElement)) {
         margin-right: 0.5em;
       }
 
-      vaadin-drawer-toggle {
-        display: flex;
-        justify-content: flex-start;
-        margin: 0 0 0 -0.3em;
-        width: 1.5em;
-        font-size: 1.3em;
-        color: rgb(0 0 0 / 75%);
-        transition: transform 0.3s ease;
-        cursor: pointer;
-      }
-
-      vaadin-drawer-toggle:hover {
-        transform: translateX(0.1em);
-      }
-
-      vaadin-app-layout::part(navbar) {
-        box-sizing: border-box;
-        height: var(--header-height);
-        min-height: var(--header-height);
-        font-size: cacl(var(--header-height) / 1.3rem);
-        background: var(--header-bk);
-        box-shadow: 0 0 2px 2px rgba(0 0 0 / 25%);
-        z-index: 2;
-      }
-
-      vaadin-app-layout .svg-logo {
-        font-size: 1.7em;
-        color: var(--logo-color);
-      }
-
-      /*
-        font-size: 1.1em;
-        background: #fff;
-        padding: 0.1em 0.125em 0 0.1em;
-        border-radius: 0.1em;
-      */
-
-      vaadin-app-layout h1.text-logo {
+      #app_header h1.text-logo {
         margin: 0 0.6em 0 0.15em;
         font-size: 1.9em;
-        /* text-shadow: 0 1px 1px rgba(0,0,0,0.5); */
         color: var(--logo-color);
       }
 
-      vaadin-app-layout h1.text-logo + * {
+      #app_header h1.text-logo + * {
         margin-left: auto;
       }
 
-      vaadin-app-layout h1.text-logo ~ *[slot="navbar"] {
+      #app_header h1.text-logo ~ *[slot="navbar"] {
         margin-right: 0.5em;
       }
 
@@ -172,26 +155,16 @@ export class AppContainer extends AppContextMixin(SpinnerMixin(LitElement)) {
         cursor: pointer;
       }
 
-      vaadin-app-layout::part(drawer) {
-        flex-direction: row;
-        justify-content: center;
-        padding: 0.75em 0;
-        width: auto;
-        max-width: 100%;
+      #global_nav {
+        position: fixed;
+        bottom: 0;
+        width: var(--nav-width);
+        height: var(--content-height);
+        padding: 0.5em 0;
+        box-sizing: border-box;
         background: #1a1a1e;
         border-right: 1px solid rgba(255, 255, 255, 0.05);
         box-shadow: 0px 2px 1px 2px rgba(0, 0, 0, 0.25);
-        z-index: 2;
-      }
-
-      #global_nav {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        box-sizing: border-box;
-        margin: 0;
-        padding: 0.5em 0;
-        font-size: 0.75em;
         z-index: 1;
       }
 
@@ -199,9 +172,7 @@ export class AppContainer extends AppContextMixin(SpinnerMixin(LitElement)) {
         display: flex;
         flex-direction: column;
         align-items: center;
-        width: 4.5em;
-        padding: 0.5em 1em;
-        margin: 0 0 1em;
+        padding: 0.8em 1em;
         opacity: 0.65;
         transition: opacity 0.3s ease;
         text-decoration: none;
@@ -209,13 +180,14 @@ export class AppContainer extends AppContextMixin(SpinnerMixin(LitElement)) {
         cursor: pointer;
       }
 
-      #global_nav a div {
-        color: rgba(255,255,255,0.8);
+      #global_nav a sl-icon {
+        font-size: 1.5em;
+        margin: 0 0 0.1em;
       }
-      
-      #global_nav sl-icon {
-        font-size: 2em;
-        margin: 0 0 0.2em;
+
+      #global_nav a div {
+        font-size: 0.75em;
+        color: rgba(255,255,255,0.8);
       }
 
       #global_nav a:hover {
@@ -228,6 +200,40 @@ export class AppContainer extends AppContextMixin(SpinnerMixin(LitElement)) {
 
       #global_nav a[active] sl-icon {
         color: var(--link-color);
+      }
+
+     
+
+      /* PAGES */
+
+      main {
+        display: flex;
+        position: relative; 
+        margin: 0 0 0 var(--nav-width);
+      }
+
+      main > * {
+        position: absolute;
+        top: 0;
+        box-sizing: border-box;
+        width: 100%;
+        height: var(--content-height);
+        opacity: 0;
+        background-color: var(--body-bk) !important;
+        visibility: hidden;
+        transition: visibility 0.3s, opacity 0.3s ease;
+        overflow: hidden;
+        z-index: -1;
+      }
+
+      main > [route-state="active"] {
+        position: relative;
+        height: auto;
+        min-height: var(--content-height);
+        opacity: 1;
+        z-index: 0;
+        visibility: visible;
+        overflow: visible;
       }
 
       /* MODALS */
@@ -244,65 +250,61 @@ export class AppContainer extends AppContextMixin(SpinnerMixin(LitElement)) {
         font-size: 1.5em;
       }
 
-      #first_run_modal::part(body) {
-        display: flex;
-        padding: 0;
-      }
-
-      #first_run_modal section {
-        display: flex;
-        align-items: center;
-        margin: 0;
-        padding: 3em;
-      }
-
-      #first_run_modal section:first-child {
-        flex-direction: column;
-        justify-content: center;
-        width: 36%;
-        max-width: 500px;
-        background: linear-gradient(-45deg, #7f25bc, #159fd1, #129287);
-        background-size: 250% 250%;
-        animation: first-run-background 15s ease infinite;
-      }
-
-      #first_run_modal h1 {
-        font-size: 12.5em;
-        font-weight: normal;
-        line-height: 0.8em;
-        margin: 0 -0.1em 0 0;
-        text-shadow: 0px 1px 4px rgba(0,0,0,0.3);
-      }
-
-      #first_run_modal  section:first-child::after {
-        content: 'Open. Decentralized. Collaboration.';
-        font-size: 1em;
-      }
-
-      @media(max-width: 500px) {
-
-      }
-
       @media(max-width: 800px) {
 
+        #global_nav_toggle {
+          display: flex;
+        }
+
         #global_nav {
+          height: 100%;
           width: 160px;
-          align-items: flex-start;
-          font-size: 1em;
+          transition: transform 0.3s ease;
+          transform: translateX(-100%);
+          z-index: 2;
+        }
+
+        #global_nav::before {
+          content: "";
+          display: block;
+          position: absolute;
+          top: 0;
+          left: 100%;
+          height: 100vh;
+          width: 100vw;
+          background: rgba(0 0 0 / 50%);
+          opacity: 0;
+          transition: opacity 0.3s ease;
+          pointer-events: none;
+        }
+
+        #app_header:has(#global_nav_toggle[active]) ~ #global_nav {
+          transform: translateX(0);
+        }
+
+        #app_header:has(#global_nav_toggle[active]) ~ #global_nav::before {
+          opacity: 1;
+          pointer-events: all;
         }
 
         #global_nav a {
           flex-direction: row;
-          margin: 0 0 0.5em;
+          font-size: 1em;
+        }
+
+        #global_nav a div {
+          font-size: 1em;
         }
 
         #global_nav a sl-icon {
-          margin: 0 0.5em 0 0;
-          font-size: 1.4em;
+          margin: 0 0.4em 0 0;
+        }
+
+        main {
+          margin: 0;
         }
 
       }
-
 
       @media(max-width: 900px) {
 
@@ -423,8 +425,11 @@ export class AppContainer extends AppContextMixin(SpinnerMixin(LitElement)) {
     `
   ]
 
-  @query('#app_layout', true)
-  appLayout;
+  @query('#global_nav_toggle', true)
+  globalNavToggle;
+
+  @query('#global_nav', true)
+  globalNav;
 
   @query('#profile_card_popup', true)
   profileCardPopup;
@@ -452,8 +457,6 @@ export class AppContainer extends AppContextMixin(SpinnerMixin(LitElement)) {
 
   constructor() {
     super();
-
-    this.context.initialize = this.#initialize();
 
     this.router = globalThis.router = new AppRouter(this, {
       onRouteChange: async (route, path) => {
@@ -499,6 +502,8 @@ export class AppContainer extends AppContextMixin(SpinnerMixin(LitElement)) {
         }
       ]
     });
+
+    this.context.initialize = this.#initialize();
   }
 
   #initialization: Promise<void> | null = null;
@@ -551,66 +556,60 @@ export class AppContainer extends AppContextMixin(SpinnerMixin(LitElement)) {
    //const inviteCount = this.context.invites.reduce((count, invite) => count + (invite.initialWrite ? 0 : 1), 0);
     return html`
 
-      <vaadin-app-layout id="app_layout">
+      <header id="app_header" flex="center-y">
+        
+        <sl-icon id="global_nav_toggle" flex class="shadow-icon" name="list" @click="${e => this.globalNavToggle.toggleAttribute('active')}"></sl-icon>
 
-        <vaadin-drawer-toggle slot="navbar">
-          <sl-icon class="shadow-icon" name="list"></sl-icon>
-        </vaadin-drawer-toggle>
+        <sl-icon class="svg-logo" name="quote-box"></sl-icon>
 
-        <!-- <svg id="logo" slot="navbar" xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="100" height="100" viewBox="0 0 32 32">
-          <path d="M 6 4 L 6 6 L 4 6 L 4 8 L 2 8 L 2 10 L 6 10 L 6 26 L 17 26 L 17 24 L 8 24 L 8 10 L 12 10 L 12 8 L 10 8 L 10 6 L 8 6 L 8 4 L 6 4 z M 15 6 L 15 8 L 24 8 L 24 22 L 20 22 L 20 24 L 22 24 L 22 26 L 24 26 L 24 28 L 26 28 L 26 26 L 28 26 L 28 24 L 30 24 L 30 22 L 26 22 L 26 6 L 15 6 z"></path>
-        </svg> -->
-
-        <sl-icon class="svg-logo" name="quote-box" slot="navbar"></sl-icon>
-
-        <h1 class="text-logo" slot="navbar">Fllw</h1>
+        <h1 class="text-logo">Fllw</h1>
 
         <sl-icon-button id="notification_button" class="shadow-icon" variant="text" name="bell-fill" slot="navbar" data-count="${globalThis.inviteCount || nothing}" @click="${ e => this.viewUserProfile(null, 'notifications') }"></sl-icon-button>
 
         ${
           this.context.connected ?
-          html`
-            <a href="/profiles/${this.context.did}" slot="navbar">
-              <sl-avatar id="user_avatar" image="${this.context?.avatar?.cache?.uri}" label="User avatar"></sl-avatar>
-            </a>
-          ` :
-          html`
-            <sl-button size="small" slot="navbar" @click="${ e => this.connectModal.show() }">
-              <sl-icon slot="prefix" name="box-arrow-in-right"></sl-icon>
-              Connect
-            </sl-button>
-          `
+            html`
+              <a href="/profiles/${this.context.did}">
+                <sl-avatar id="user_avatar" image="${this.context?.avatar?.cache?.uri}" label="User avatar"></sl-avatar>
+              </a>
+            ` :
+            html`
+              <sl-button size="small" @click="${ e => this.connectModal.show() }">
+                <sl-icon slot="prefix" name="box-arrow-in-right"></sl-icon>
+                Connect
+              </sl-button>
+            `
         }
 
-        <nav id="global_nav" slot="drawer">
-          <a href="/" ?active="${location.pathname === '/'}">
-            <sl-icon slot="prefix" name="house"></sl-icon>
-            <div>Home</div>
-          </a>
-          <a href="/profiles" ?active="${this.router.activeComponent === this.directoryPage}">
-            <sl-icon slot="prefix" name="user-search"></sl-icon>
-            <div>Lookup</div>
-          </a>
-          <a href="/follows" ?active="${location.pathname.match('follows')}">
-            <sl-icon slot="prefix" name="people"></sl-icon>
-            <div>Follows</div>
-          </a>
-          <a href="/settings" ?active="${location.pathname.match('settings')}">
-            <sl-icon slot="prefix" name="gear"></sl-icon>
-            <div>Settings</div>
-          </a>
-        </nav>
+      </header>
 
-        <main id="pages">
-          <page-home id="home" scroll></page-home>
-          <page-directory id="directory" scroll></page-directory>     
-          <page-story id="story" scroll></page-story>
-          <page-follows id="follows" scroll></page-follows>
-          <page-settings id="settings" scroll></page-settings>
-          <page-profile id="profile" did="${this.context.did || nothing}" scroll></page-profile>
-        </main>
+      <nav id="global_nav" @click="${e => this.globalNavToggle.removeAttribute('active')}">
+        <a href="/" ?active="${location.pathname === '/'}">
+          <sl-icon slot="prefix" name="house"></sl-icon>
+          <div>Home</div>
+        </a>
+        <a href="/profiles" ?active="${this.router.activeComponent === this.directoryPage}">
+          <sl-icon slot="prefix" name="user-search"></sl-icon>
+          <div>Lookup</div>
+        </a>
+        <a href="/follows" ?active="${location.pathname.match('follows')}">
+          <sl-icon slot="prefix" name="people"></sl-icon>
+          <div>Follows</div>
+        </a>
+        <a href="/settings" ?active="${location.pathname.match('settings')}">
+          <sl-icon slot="prefix" name="gear"></sl-icon>
+          <div>Settings</div>
+        </a>
+      </nav>
 
-      </vaadin-app-layout>
+      <main>
+        <page-home id="home" scroll></page-home>
+        <page-directory id="directory" scroll></page-directory>     
+        <page-story id="story" scroll></page-story>
+        <page-follows id="follows" scroll></page-follows>
+        <page-settings id="settings" scroll></page-settings>
+        <page-profile id="profile" did="${this.context.did || nothing}" scroll></page-profile>
+      </main>
 
       <sl-dialog id="connect_modal" label="Connect" placement="start">
         <section flex="column center-x center-y">

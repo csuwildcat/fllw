@@ -16,3 +16,9 @@ export const socialApps = {
     icon: 'cash-app'
   }
 }
+
+const matchTitleRegex = /\s*#\s+([^\n]+)/;
+
+export const storyUtils = {
+  getTitle: (markdown = '', empty = 'Untitled') => markdown?.match?.(matchTitleRegex)?.[1] || empty
+}

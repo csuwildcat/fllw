@@ -1,4 +1,7 @@
 
+:root {
+  --hero-border-size: clamp(0.2em, 1vw, 0.4em);
+}
 
 :host > [limit-width] {
   max-width: var(--content-max-width);
@@ -22,6 +25,10 @@
 ul, ol {
   margin: 0;
   padding: 0;
+}
+
+.markdown-body *:is(ul, ol) {
+  padding: 0.25em 1.2em;
 }
 
 form input,
@@ -160,6 +167,15 @@ sl-button sl-icon {
   color: var(--header-bk);
 }
 
+[default-content~="placeholder"] > :is(svg, sl-icon) {
+  display: block;
+  margin: 1rem auto 1.75rem;
+  font-size: 9em;
+  max-width: 300px;
+  height: auto;
+  color: var(--header-bk);
+}
+
 [default-content~="firstrun"] > :is(svg, sl-icon) {
   display: block;
   margin: 4rem auto;
@@ -235,6 +251,35 @@ sl-button sl-icon {
 .page-dialog::part(panel) {
   max-height: calc(100% - var(--header-height) - var(--sl-spacing-2x-large));
   margin-top: var(--header-height);
+}
+
+.hero[src] {
+  background: none;
+}
+
+.hero::part(fallback) {
+  display: none;
+}
+
+.hero::after {
+  content: " ";
+  box-sizing: border-box;
+  position: absolute;
+  inset: 0;
+  border-radius: var(--block-radius) var(--block-radius) 0 0;
+  border-bottom: var(--hero-border-size) solid rgba(0 0 0 / 15%);
+  box-shadow: 0 1px 0px 1px inset rgba(255 255 255 / 6%);
+  z-index: 2;
+}
+
+.hero sl-icon-button {
+  position: absolute;
+  top: 1em;
+  right: 1em;
+  background: rgba(0 0 0 / 0.6);
+  border-radius: 100%;
+  cursor: pointer;
+  z-index: 3;
 }
 
 #view_header {

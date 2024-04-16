@@ -45,9 +45,9 @@ export const AppContextMixin = (BaseClass) => class extends BaseClass {
 
   async getIdentity(_did, loadProfile){
     const { web5, did } = await Web5.connect({
-      techPreview: {
-        dwnEndpoints: ['http://localhost:3000']
-      }
+      // techPreview: {
+      //   dwnEndpoints: ['http://localhost:3000']
+      // }
     });
     console.log(did);
     globalThis.userDID = this.context.did = did;
