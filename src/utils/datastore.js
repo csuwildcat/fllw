@@ -135,6 +135,7 @@ class Datastore {
   }
 
   async createProtocolRecord(protocol, path, options = {}){
+    console.log(arguments);
     await this.ready;;
     const params = {
       message: {
@@ -355,7 +356,7 @@ class Datastore {
       }
       const response = await hero.update({ data: options.data });
       console.log(response);
-      var { status } = hero.send(story.author);
+      hero.send(story.author);
     }
     else {
       options.parentContextId = story.id;
@@ -371,8 +372,7 @@ class Datastore {
       data.hero = hero.id;
       console.log(data);
       await story.update({ data });
-      var response = await story.send(story.author);
-      console.log(response);
+      story.send(story.author);
     }
     return story._hero = hero;
   }

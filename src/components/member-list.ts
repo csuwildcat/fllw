@@ -11,7 +11,7 @@ import { SpinnerMixin, SpinnerStyles } from '../utils/spinner';
 
 import { ProfileCard } from './components/profile-card'
 
-import PageStyles from  '../styles/page.css';
+import PageStyles from '../styles/page.css' with { type: 'css' };
 const transitionDuration = 300;
 
 @customElement('member-list')
@@ -21,7 +21,7 @@ export class MemberList extends SpinnerMixin(LitElement) {
   app;
 
   static styles = [
-    unsafeCSS(PageStyles),
+    PageStyles,
     SpinnerStyles,
     css`
       :host {

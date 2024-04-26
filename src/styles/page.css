@@ -1,5 +1,5 @@
 
-:root {
+:host {
   --hero-border-size: clamp(0.2em, 1vw, 0.4em);
 }
 

@@ -5,11 +5,11 @@ import { ifDefined } from 'lit/directives/if-defined.js';
 import { DOM, notify, natives } from '../utils/helpers.js';
 import '../components/w5-img'
 
-import PageStyles from  '../styles/page.css';
+import PageStyles from '../styles/page.css' with { type: 'css' };
 @customElement('page-settings')
 export class PageSettings extends LitElement {
   static styles = [
-    unsafeCSS(PageStyles),
+    PageStyles,
     css`
 
       form {

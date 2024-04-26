@@ -6,9 +6,9 @@ import { AppContext } from '../utils/context.js';
 import '../components/global.js'
 import '../components/markdown-editor.js'
 import { render as renderMarkdown } from '../utils/markdown.js';
-import { hashToGradient } from '../utils/colors';
+import { hashToGradient } from '../utils/colors.js';
 import { DOM, notify } from '../utils/helpers.js';
-import PageStyles from  '../styles/page.css';
+import PageStyles from '../styles/page.css' with { type: 'css' };
 
 import '../components/w5-img'
 
@@ -18,12 +18,12 @@ const matchTitleRegex = /\s*#\s+([^\n]+)/;
 export class PageStory extends LitElement {
 
   static styles = [
-    unsafeCSS(PageStyles),
+    PageStyles,
     css`
 
       :host {
         overflow-x: hidden;
-        --hero-background-padding: clamp(4em, 100vw, 10em);
+        --hero-background-padding: clamp(4em, 100vw, 6em);
       }
 
       #content {
@@ -129,11 +129,15 @@ export class PageStory extends LitElement {
       #editor::part(textarea),
       #rendered_story .markdown-body {
         flex: 1;
-        margin: 1em 0 0;
-        padding: 1em 0.75em;
-        background: var(--grey);
-        border-radius: var(--block-radius);
-        box-shadow: var(--block-shadow);
+        margin: 1.5em 0 0;
+        background: none;
+      }
+
+      #editor::part(textarea) {
+        width: 100%;
+        padding: 0em 1em;
+        box-sizing: content-box;
+        z-index: 2;
       }
 
       #publish_button {
@@ -145,17 +149,20 @@ export class PageStory extends LitElement {
       }
 
       #edit_hero_container {
-        position: relative;
+        position: sticky;
         width: 100%;
+        opacity: calc(1 - var(--scroll-position) / 310);
+        transform: translateY(calc(var(--scroll-position)* 0.4px));
+        will-change: transform, opacity;
+        filter: blur(clamp(0px, calc(var(--scroll-position)* 0.05px), 2px));
       }
 
       #edit_hero_background {
-        --hero-background-padding: clamp(4em, 10vw, 6em);
         position: absolute;
         top: 50%;
         left: 50%;
-        width: calc(100% + var(--hero-background-padding));
-        height: calc(100% + var(--hero-background-padding));
+        width: calc(100% + 1em);
+        height: calc(100% + 1em);
         border-radius: var(--block-radius);
         transform: translate(-50%, -50%);
         z-index: 0;
@@ -169,25 +176,29 @@ export class PageStory extends LitElement {
           width: 100%;
           height: 100%;
           border: none;
-          box-shadow: 0 0 3em 2em inset var(--body-bk), 0 0 4em 3em inset var(--body-bk);
+          box-shadow: 0 0 5em 0em inset var(--body-bk);
         }
-
-
 
       #edit_hero {
         width: 100%;
         min-height: 15em;
         max-height: 20em;
-        border-radius: var(--block-radius);
-        background: var(--deterministic-background);
-        /* opacity: calc(1 - var(--scroll-distance) / 400);
-        transform: translateY(calc(var(--scroll-distance)* 0.2%));
-        transition: transform 0.3s ease;
-        will-change: transform, opacity; */
+        border-radius: calc(var(--block-radius) + -0.1em);
+        border: 1px solid rgba(255 255 255 / 7%);
+        border-bottom: 1px solid rgba(255 255 255 / 6%);
       }
 
       #edit_hero::after {
         display: none;
+      }
+
+      #edit_hero:not([src])::part(fallback) {
+        display: block;
+      }
+
+      #edit_hero:not([src]) {
+        background: rgba(255 255 255 / 5%);
+        border: 5px dashed rgba(255 255 255 / 10%);
       }
 
       #edit_hero[src][loaded] {
@@ -294,7 +305,7 @@ export class PageStory extends LitElement {
   set panel(mode) {
     mode = this.#panel = mode?.match?.(/(view|edit)/)?.[1] || 'view';
     if (mode === 'view') {
-      this.renderedStory = renderMarkdown(this?.editor?.content || '')
+      this.renderStory();
     }
     else if (mode === 'edit') {
       DOM.skipFrame(() => this?.editor?.focus?.());
@@ -316,7 +327,12 @@ export class PageStory extends LitElement {
     this.storyLoaded = new Promise(resolve => this._storyLoadResolve = resolve);
     this.addEventListener('editor-ready', async () => {
       await this.storyLoaded;
+      this.editor.fileHandler = async (file) => {
+        const record = await this.storeMedia(file);
+        return `http://${this.story.author}/records/${record.id}`;
+      }
       this.editor.content = this?.story?.cache?.json?.markdown;
+      this.renderStory();
       this.handleEditorUpdate();
     }, { once: true })
   }
@@ -349,6 +365,43 @@ markdown: `# YOUR TITLE HERE
 - You can use markdown
 - Add a hero image to your story
 - Have fun!
+
+
+
+
+
+
+
+
+
+
+
+.
+
+
+
+
+
+
+
+
+
+
+
+.
+
+
+
+
+
+
+
+
+
+
+
+
+.
 `
           }
         });
@@ -371,6 +424,10 @@ markdown: `# YOUR TITLE HERE
     }
     
     this._storyLoadResolve();
+  }
+
+  renderStory(){
+    this.renderedStory = renderMarkdown(this?.editor?.content || '')
   }
 
   switchModes(e){
@@ -402,16 +459,18 @@ markdown: `# YOUR TITLE HERE
 
   handleDebouncedEditorUpdate = DOM.debounce(save => this.handleEditorUpdate(save), 200)
 
-  async handleFileChange(type, input){
+  async storeMedia(file, isHero = false){
+    if (!file) return;
     await this.context.initialize;
-    const file = input.files[0];
-    if (type === 'hero') {
-      await datastore.setStoryHero(this.story, { data: file })
+    let record;
+    if (isHero) {
+      record = await datastore.setStoryHero(this.story, { data: file })
     }
     else {
-      await datastore.createStoryMedia(this.story, { data: file });
+      record = await datastore.createStoryMedia(this.story, { data: file });
     }
     this.requestUpdate();
+    return record;
   }
 
   async togglePublishState(){
@@ -425,6 +484,7 @@ markdown: `# YOUR TITLE HERE
   render() {
     const published = this?.story?.published;
     const data = this?.story?.cache?.json || {};
+    const heroDRL = data?.hero && `http://${this.story.author.replace(':', '/')}/records/${data.hero}`;
     return html`
       <section id="content" flex="column">
         <header id="header" flex="center-y">
@@ -459,10 +519,10 @@ markdown: `# YOUR TITLE HERE
             <sl-tab-panel id="edit_panel" name="edit" ?active="${this.panel === 'edit'}">
               <markdown-editor id="editor" @afterupdate="${e => this.handleDebouncedEditorUpdate(true)}">
                 <div id="edit_hero_container" slot="before-content">
-                  <w5-img id="edit_hero_background" class="hero" src="${this?.story?._hero?.cache?.uri || nothing}" style="--deterministic-background: ${this.deterministicBackground}"></w5-img>
-                  <w5-img id="edit_hero" class="hero" src="${this?.story?._hero?.cache?.uri || nothing}" style="--deterministic-background: ${this.deterministicBackground}">
+                  <w5-img id="edit_hero_background" class="hero" src="${heroDRL || nothing}"></w5-img>
+                  <w5-img id="edit_hero" class="hero" src="${heroDRL || nothing}">
                     <sl-icon-button class="edit-button" name="pencil" size="medium" @click="${e => this.heroInput.click()}"></sl-icon-button>
-                    <input id="hero_input" type="file" accept="image/png, image/jpeg, image/gif" style="display: none" @change="${e => this.handleFileChange('hero', this.heroInput)}" />
+                    <input id="hero_input" type="file" accept="image/png, image/jpeg, image/gif" style="display: none" @change="${e => this.storeMedia(this.heroInput?.files?.[0], true)}" />
                   </w5-img>
                 </div>
               </markdown-editor>

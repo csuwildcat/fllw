@@ -3,7 +3,7 @@ import { customElement, query, property } from 'lit/decorators.js';
 
 import * as markdown from  '../utils/markdown.js';
 
-import PageStyles from  '../styles/page.css';
+import PageStyles from '../styles/page.css' with { type: 'css' };
 import { DOM } from '../utils/helpers.js';
 import './global.js'
 
@@ -12,7 +12,7 @@ import './w5-img.js'
 @customElement('message-item')
 export class MessageItem extends LitElement {
   static styles = [
-    unsafeCSS(PageStyles),
+    PageStyles,
     markdown.styles,
     css`
       :host {

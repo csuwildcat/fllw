@@ -4,14 +4,14 @@ import { customElement, query, property } from 'lit/decorators.js';
 
 import { DOM, notify } from '../utils/helpers.js';
 
-import PageStyles from  '../styles/page.css';
+import PageStyles from '../styles/page.css' with { type: 'css' };
 import '../components/post-editor';
 import '../components/markdown-content'
 
 @customElement('page-drafts')
 export class PageDrafts extends LitElement {
   static styles = [
-    unsafeCSS(PageStyles),
+    PageStyles,
     css`
 
       :host {

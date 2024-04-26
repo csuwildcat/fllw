@@ -1,27 +1,35 @@
 {
   "compilerOptions": {
-      "module": "esnext",
-      "target": "esnext",
-      "lib": ["es2017", "esnext", "dom", "dom.iterable"],
+      "module": "ESNext",
+      "target": "ESNext",
+      "moduleResolution": "NodeNext",
+      "strict": false,
+      "allowJs": true,
+      "skipLibCheck": true,
+      "isolatedModules": true,
+      "resolveJsonModule": true,
       "declaration": true,
       "emitDeclarationOnly": true,
-      "outDir": "./types",
-      "strict": false,
-      "noUnusedLocals": true,
-      "noUnusedParameters": true,
-      "noImplicitReturns": true,
-      "noFallthroughCasesInSwitch": true,
-      "moduleResolution": "node",
+      "noEmitOnError": false,
+      "noImplicitAny": false,
+      "strictNullChecks": false,
+      "strictFunctionTypes": false,
+      "strictPropertyInitialization": false,
+      "suppressImplicitAnyIndexErrors": true,
+      "noUnusedLocals": false,
+      "noUnusedParameters": false,
       "allowSyntheticDefaultImports": true,
       "experimentalDecorators": true,
       "forceConsistentCasingInFileNames": true,
       "useDefineForClassFields": false,
-      "isolatedModules": true,
+      "outDir": "./types",
+      "lib": ["es2017", "esnext", "dom", "dom.iterable"],
       "types": [
+        "vite/client",
         "vite-plugin-pwa/client",
-        "vite/client"
+        "vite-plugin-import-css-sheet/client"
       ]
   },
-  "include": ["src/**/*.ts", "src/pages/home.js", "src/utils/context.js", "src/utils/helpers.js"],
+  "include": ["src/**/*.ts", "src/pages/home.js", "src/utils/context.js", "src/utils/helpers.js", "public/sw.js"],
   "exclude": ["node_modules"]
 }

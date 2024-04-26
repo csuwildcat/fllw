@@ -63,6 +63,27 @@ export class MarkdownEditor extends LitElement {
         background: var(--border-color);
       }
 
+      .ink-drop-zone:not(.visible) {
+        display: flex;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+      }
+
+      .ink-drop-zone.visible {
+        pointer-events: all;
+        opacity: 1;
+      }
+
+      .ink-drop-zone-modal {
+        transform: scale(0.9);
+        transition: transform 0.3s ease;
+      }
+
+      .ink-drop-zone.visible .ink-drop-zone-modal {
+        transform: scale(1);
+      }
+
       @media(max-width: 430px) {
         .ink-mde .ink-mde-toolbar {
           position: sticky;
@@ -105,6 +126,19 @@ export class MarkdownEditor extends LitElement {
         beforeUpdate: () => DOM.fireEvent(this, 'beforeupdate'),
         afterUpdate: () => DOM.fireEvent(this, 'afterupdate')
       },
+      files: {
+        clipboard: true,
+        dragAndDrop: true,
+        handler: (files) => {
+          if (this.fileHandler) {
+            const file = files.item(0);
+            console.log(file)
+            return this.fileHandler(file);
+          }
+        },
+        injectMarkup: true,
+        types: ['image/*']
+      }
     });
 
     const toolbar = editorElement.querySelector('.ink-mde-toolbar');

@@ -8,13 +8,16 @@ import { setAnimation } from '@shoelace-style/shoelace/dist/utilities/animation-
 import { AppRouter } from './components/router';
 import * as protocols from './utils/protocols';
 
+import { UniversalResolver, DidDht, DidWeb } from '@web5/dids';
+const DidResolver = globalThis.DidResolver = new UniversalResolver({ didResolvers: [DidDht, DidWeb] });
+
 import './styles/global.css';
 import './components/global.js';
 import './styles/theme.js';
 import { DOM, notify, natives } from './utils/helpers.js';
-import PageStyles from  './styles/page.css';
+import PageStyles from  './styles/page.css' with { type: 'css' };
 
-import { SpinnerMixin, SpinnerStyles } from './utils/spinner';
+import { SpinnerMixin, SpinnerStyles } from './utils/spinner.js';
 
 import '@vaadin/app-layout/theme/lumo/vaadin-app-layout.js';
 import '@vaadin/app-layout/theme/lumo/vaadin-drawer-toggle.js';
@@ -26,12 +29,36 @@ import './pages/settings.js';
 import './pages/profile.js';
 import './pages/story.js';
 
-import { ProfileCard } from './components/profile-card'
+// import { ProfileCard } from './components/profile-card'
 
-const BASE_URL: string = (import.meta.env.BASE_URL).length > 2 ? (import.meta.env.BASE_URL).slice(1, -1) : (import.meta.env.BASE_URL);
-const rootStyles = document.documentElement.style;
+// const BASE_URL: string = (import.meta.env.BASE_URL).length > 2 ? (import.meta.env.BASE_URL).slice(1, -1) : (import.meta.env.BASE_URL);
+
+navigator.serviceWorker.register('/sw.js', { type: 'classic' })
+
+navigator.serviceWorker.addEventListener('message', async event => {
+  if (event.data && event.data.type === 'did_resolution') {
+    const did = event.data.did;
+    const port = event.ports[0];
+    const message = { type: 'did_resolution', did }
+    try { 
+      message.result = await DidResolver.resolve(did);
+    }
+    catch(error) {
+      message.error = error
+    }
+    port.postMessage(message);
+  }
+});
+
+const rootElement = document.documentElement;
+const rootStyles = rootElement.style;
+let lastScrollPosition = 0;
 function setScrollFactor(){
-  rootStyles.setProperty('--scroll-distance', window.scrollY);
+  const scrollPosition = window.scrollY;
+  rootElement.setAttribute('scroll-direction', !scrollPosition || scrollPosition > lastScrollPosition ? 'down' : 'up');
+  rootStyles.setProperty('--scroll-position', scrollPosition);
+  rootStyles.setProperty('--scroll-height', rootElement.scrollHeight);
+  lastScrollPosition = scrollPosition;
 }
 
 window.addEventListener('scroll', () => requestAnimationFrame(setScrollFactor));
@@ -55,7 +82,7 @@ document.addEventListener('profile-card-popup', e => {
 export class AppContainer extends AppContextMixin(SpinnerMixin(LitElement)) {
 
   static styles = [
-    unsafeCSS(PageStyles),
+    PageStyles,
     SpinnerStyles,
     css`
 
@@ -460,7 +487,7 @@ export class AppContainer extends AppContextMixin(SpinnerMixin(LitElement)) {
 
     this.router = globalThis.router = new AppRouter(this, {
       onRouteChange: async (route, path) => {
-        console.log(route, path);
+        //console.log(route, path);
         if (this.initialized) {
           
         }
@@ -516,7 +543,7 @@ export class AppContainer extends AppContextMixin(SpinnerMixin(LitElement)) {
         await this.loadProfile(localStorage.did);
       }
       else {
-        await this.getIdentity() 
+        // await this.getIdentity() 
       }
       resolve();
       this.initialized = true;

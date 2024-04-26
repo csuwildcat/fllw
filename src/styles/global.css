@@ -20,7 +20,7 @@
   --body-bk: #151518;
   --block-bk: var(--grey);
   --block-radius: 0.5em;
-  --block-shadow: 0 0 1px 0 inset rgba(255 255 255 / 10%), 0 1px 3px 0px rgba(0 0 0 / 0.4);
+  --block-shadow: 0 0 2px 0 inset rgba(255 255 255 / 10%), 0 1px 3px 0px rgba(0 0 0 / 0.4);
   /* 0 0 1px 0px inset rgba(255,255,255,0.2) */
   --grey: hsl(240 4% 14% / 1);
   --grey-light: hsl(240 3% 23% / 1);

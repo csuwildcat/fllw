@@ -4,7 +4,7 @@ import { consume } from '@lit/context';
 import { AppContext } from '../utils/context.js';
 
 import '../components/global.js'
-import PageStyles from  '../styles/page.css';
+import PageStyles from '../styles/page.css' with { type: 'css' };
 import * as follows from '../utils/follows';
 
 @customElement('page-home')
@@ -19,7 +19,7 @@ export class PageHome extends LitElement {
   }
 
   static styles = [
-    unsafeCSS(PageStyles),
+    PageStyles,
     css`
 
       #placeholder > div {

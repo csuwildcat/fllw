@@ -6,12 +6,12 @@ import { format, intervalToDuration, formatDuration } from "date-fns";
 import { natives } from '../utils/helpers.js';
 import './global.js'
 
-import PageStyles from  '../styles/page.css';
+import PageStyles from '../styles/page.css' with { type: 'css' };
 
 @customElement('job-item')
 export class JobItem extends LitElement {
   static styles = [
-    unsafeCSS(PageStyles),
+    PageStyles,
     css`
 
       :host {

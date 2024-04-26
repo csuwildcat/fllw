@@ -58,7 +58,8 @@ export class W5Image extends LitElement {
 
   static properties = {
     src: {
-      type: String
+      type: String,
+      reflect: true
     },
     fallback: {
       type: String
@@ -68,8 +69,9 @@ export class W5Image extends LitElement {
   @query('#image', true)
   image
 
+  #src;
   set src(val){
-    this._src = val;
+    this.#src = val;
     this.removeAttribute('loaded');
     if (this.image) {
       this.image.removeAttribute('loaded');
@@ -78,7 +80,7 @@ export class W5Image extends LitElement {
   }
 
   get src(){
-    return this._src;
+    return this.#src;
   }
 
   loaded(){
@@ -92,7 +94,7 @@ export class W5Image extends LitElement {
 
   render() {
     return html`
-      <img id="image" part="image" src="${ ifDefined(this.src) }" @load="${e => this.loaded() }"/>
+      <img id="image" part="image" src="${ ifDefined(this.src) }" @load="${e => this.loaded() }" @error="${ e => DOM.fireEvent(this, 'error', { detail: { originalTarget: this } }) }"/>
       ${ this?.fallback?.match(/^[a-zA-Z0-9]+:/) ? html`<img part="fallback" src="${this.fallback}">` : html`<sl-icon part="fallback" name="${this.fallback || 'image'}"></sl-icon>` }
       <slot></slot>
     `;

@@ -29,7 +29,7 @@ Object.defineProperty(VirtualList, 'template', {
   }
 });
 
-import PageStyles from  '../styles/page.css';
+import PageStyles from '../styles/page.css' with { type: 'css' };
 import { DOM, notify } from '../utils/helpers.js';
 import date from  '../utils/date.js';
 
@@ -42,7 +42,7 @@ export class CommunityChannel extends SpinnerMixin(LitElement) {
   context;
 
   static styles = [
-    unsafeCSS(PageStyles),
+    PageStyles,
     SpinnerStyles,
     markdown.styles,
     css`

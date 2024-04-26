@@ -4,6 +4,8 @@ if (!globalThis.URLPattern) {
 }
 
 const drlCaptureRegexp = /^(?:dweb:\/\/)?(did:[^\/]+)(?:\/protocols\/([^\/]+)\/?)?/;
+const hasBuffers = typeof Buffer !== 'undefined';
+
 const natives = {
   deepSet(obj, path, value) {
     const keys = path.split('.');
@@ -25,18 +27,15 @@ const natives = {
     return result;
   },
   url: {
-    encode(str){
-      return btoa(encodeURIComponent(str)
-        .replace(/%([0-9A-F]{2})/g, (match, p1) => String.fromCharCode('0x' + p1)))
-        .replace(/\+/g, '-')
-        .replace(/\//g, '_')
-        .replace(/=+$/, '');
+    encode: (str) => {
+      let encoded = [hasBuffers ? Buffer.from : btoa](encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (match, p1) => String.fromCharCode('0x' + p1)))
+      if (hasBuffers) encoded = encoded.toString('base64');
+      return encoded.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
     },
-    decode(str){
-      return decodeURIComponent(atob(str
-        .replace(/-/g, '+')
-        .replace(/_/g, '/'))
-        .split('')
+    decode: (str) => {
+      let decoded = str.replace(/-/g, '+').replace(/_/g, '/');
+      decoded = hasBuffers ? Buffer.from(decoded, 'base64').toString() : atob(decoded);
+      return decodeURIComponent(decoded.split('')
         .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
         .join(''));
     }

@@ -2,6 +2,7 @@ import { createContext, provide } from '@lit/context';
 
 import { Web5 } from '@web5/api';
 import { Datastore } from './datastore.js';
+import { activateDomFeatures } from './dweb';
 
 const initialState = {
   instance: null,
@@ -50,6 +51,7 @@ export const AppContextMixin = (BaseClass) => class extends BaseClass {
       // }
     });
     console.log(did);
+    globalThis.web5 = web5;
     globalThis.userDID = this.context.did = did;
     globalThis.datastore = new Datastore({
       web5,
@@ -58,6 +60,7 @@ export const AppContextMixin = (BaseClass) => class extends BaseClass {
     if (loadProfile) {
       await this.loadProfile(did);
     }
+    activateDomFeatures(web5);
     return did;
   }
 

@@ -5,14 +5,14 @@ import { AppContext } from '../utils/context.js';
 
 import '../components/global.js'
 import '../components/markdown-editor.js'
-import PageStyles from  '../styles/page.css';
+import PageStyles from '../styles/page.css' with { type: 'css' };
 import * as follows from '../utils/follows.js';
 
 @customElement('page-posts')
 export class PagePosts extends LitElement {
 
   static styles = [
-    unsafeCSS(PageStyles),
+    PageStyles,
     css`
 
       #placeholder > div {

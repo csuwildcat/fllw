@@ -5,7 +5,7 @@ import { consume } from '@lit/context';
 import { AppContext } from '../utils/context.js';
 import { DOM, notify, natives } from '../utils/helpers.js';
 
-import PageStyles from  '../styles/page.css';
+import PageStyles from '../styles/page.css' with { type: 'css' };
 
 @customElement('page-directory')
 export class PageDirectory extends LitElement {
@@ -14,7 +14,7 @@ export class PageDirectory extends LitElement {
   context;
 
   static styles = [
-    unsafeCSS(PageStyles),
+    PageStyles,
     css`
 
       #search_bar {

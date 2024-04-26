@@ -8,7 +8,7 @@ import { AppContext } from '../utils/context.js';
 import { DOM, notify, natives } from '../utils/helpers.js';
 import './global.js'
 
-import PageStyles from  '../styles/page.css';
+import PageStyles from '../styles/page.css' with { type: 'css' };
 
 import './w5-img.js'
 import './invite-item.js';
@@ -20,7 +20,7 @@ export class CommunityView extends LitElement {
   context;
 
   static styles = [
-    unsafeCSS(PageStyles),
+    PageStyles,
     css`
 
       :host {

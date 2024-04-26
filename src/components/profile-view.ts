@@ -5,13 +5,13 @@ import { ifDefined } from 'lit/directives/if-defined.js';
 import { format, intervalToDuration, formatDuration } from "date-fns";
 
 import { AppContext } from '../utils/context.js';
-import { hashToGradient } from '../utils/colors';
-import { socialApps, storyUtils } from '../utils/content';
+import { hashToGradient } from '../utils/colors.js';
+import { socialApps, storyUtils } from '../utils/content.js';
 import { DOM, notify, natives } from '../utils/helpers.js';
 import { render } from '../utils/markdown.js';
 import './global.js'
 
-import PageStyles from  '../styles/page.css';
+import PageStyles from '../styles/page.css' with { type: 'css' };
 
 import '../components/w5-img'
 import '../components/invite-item';
@@ -23,7 +23,7 @@ export class ProfileView extends LitElement {
   context;
 
   static styles = [
-    unsafeCSS(PageStyles),
+    PageStyles,
     css`
 
       :host {
@@ -561,6 +561,7 @@ export class ProfileView extends LitElement {
 
   async loadStories(){
     const options = {
+      from: this.did,
       pagination: {
         limit: 10,
       }
