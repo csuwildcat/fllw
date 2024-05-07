@@ -15,18 +15,18 @@ import MathStyles from 'katex/dist/katex.css' assert { type: 'css' };
 import HighlightStyles from 'highlight.js/styles/atom-one-dark.css' assert { type: 'css' };
 import GithubStyles from 'github-markdown-css/github-markdown.css' assert { type: 'css' };
 
-export const styles = css`${unsafeCSS([
+export const styles = [
   BaseStyles,
   MathStyles,
   HighlightStyles,
   GithubStyles,
-  `
+  css`
     .markdown-body {
       font-family: unset;
       background: none;
     }
   `
-].join(''))}`
+]
 
 export const plugins = [
   gfm(),

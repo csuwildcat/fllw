@@ -5,7 +5,7 @@ import { AppContext } from '../utils/context.js';
 
 import '../components/global.js'
 import '../components/markdown-editor.js'
-import { render as renderMarkdown } from '../utils/markdown.js';
+import * as markdown from '../utils/markdown.js';
 import { hashToGradient } from '../utils/colors.js';
 import { DOM, notify } from '../utils/helpers.js';
 import PageStyles from '../styles/page.css' assert { type: 'css' };
@@ -19,6 +19,7 @@ export class PageStory extends LitElement {
 
   static styles = [
     PageStyles,
+    ...markdown.styles,
     css`
 
       :host {
@@ -40,7 +41,7 @@ export class PageStory extends LitElement {
 
       #header {
         position: sticky;
-        top: 0;
+        top: var(--header-height);
         box-sizing: border-box;
         height: var(--header-height);
         padding: 0 0.65em 0 0.9em;
@@ -106,7 +107,7 @@ export class PageStory extends LitElement {
 
       #editor::part(toolbar) {
         position: sticky;
-        top: var(--header-height);
+        top: calc(var(--header-height) * 2);
         box-sizing: border-box;
         height: 3em;
         padding: 0.1em 0.4em 0;
@@ -181,8 +182,8 @@ export class PageStory extends LitElement {
 
       #rendered_story .markdown-body img {
         display: block;
-        width: 100%;
-        max-width: 80vw;
+        width: 90%;
+        max-width: 600px;
         margin: 2em auto;
       }
 
@@ -400,7 +401,7 @@ markdown: `# YOUR TITLE HERE
   }
 
   renderStory(){
-    this.renderedStory = renderMarkdown(this?.editor?.content || '')
+    this.renderedStory = markdown.render(this?.editor?.content || '')
   }
 
   switchModes(e){

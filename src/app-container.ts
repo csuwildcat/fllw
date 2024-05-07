@@ -15,7 +15,7 @@ import './styles/global.css';
 import './components/global.js';
 import './styles/theme.js';
 import { DOM, notify, natives } from './utils/helpers.js';
-import PageStyles from  './styles/page.css' assert { type: 'css' };
+import PageStyles from './styles/page.css' assert { type: 'css' };
 
 import { SpinnerMixin, SpinnerStyles } from './utils/spinner.js';
 
