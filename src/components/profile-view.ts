@@ -30,6 +30,7 @@ export class ProfileView extends LitElement {
         --avatar-size: clamp(6em, 18vw, 9em);
         --block-padding: calc(var(--avatar-size) * 0.2);
         --hero-border-size: clamp(0.2em, 1vw, 0.4em);
+        --hero-border: var(--hero-border-size) solid rgba(0 0 0 / 15%);
         position: relative;
         display: flex;
         box-sizing: border-box;
@@ -72,7 +73,15 @@ export class ProfileView extends LitElement {
         width: 100%;
         height: var(--avatar-size);
         background: var(--deterministic-background);
-        border-bottom: var(--hero-border-size) solid rgba(0 0 0 / 30%);
+      }
+
+      #hero::after {
+        content: "";
+        position: absolute;
+        bottom: 0;
+        width: 100%;
+        border-bottom: var(--hero-border);
+        z-index: 2;
       }
 
       #hero[src] {
@@ -109,7 +118,7 @@ export class ProfileView extends LitElement {
         --size: var(--avatar-size);
         position: absolute;
         background: var(--grey-lighter);
-        outline: var(--hero-border-size) solid rgba(0 0 0 / 15%);
+        outline: var(--hero-border);
         box-shadow: 0 1px 1px 0px rgba(0 0 0 / 0.6);
         border-radius: 6px;
         z-index: 2;
