@@ -5,7 +5,7 @@ import { AppContext } from '../utils/context.js';
 
 import '../components/global.js'
 import '../components/markdown-editor.js'
-import PageStyles from '../styles/page.css' with { type: 'css' };
+import PageStyles from '../styles/page.css' assert { type: 'css' };
 import * as follows from '../utils/follows.js';
 
 @customElement('page-posts')

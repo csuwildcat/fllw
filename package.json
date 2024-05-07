@@ -10,6 +10,7 @@
     "dev-task": "vite",
     "prebuild": "node scripts/prebuild.js",
     "build": "cp node_modules/@web5/dids/dist/browser.js public/web5-dids.js && tsc && vite build",
+    "doitlive": "cp node_modules/@web5/dids/dist/browser.js public/web5-dids.js && tsc --skipLibCheck && vite build",
     "start": "cp node_modules/@web5/dids/dist/browser.js public/web5-dids.js && npm run prebuild && npm run dev",
     "start-remote": "vite --host"
   },
@@ -35,7 +36,7 @@
     "@vaadin/message-list": "24.4.0-alpha12",
     "@vaadin/select": "24.4.0-alpha12",
     "@vaadin/virtual-list": "24.4.0-alpha12",
-    "@web5/api": "0.9.2",
+    "@web5/api": "0.9.3",
     "buffer": "^6.0.3",
     "bytemd": "^1.21.0",
     "date-fns": "^3.6.0",
@@ -49,8 +50,6 @@
     "rollup-plugin-polyfill-node": "^0.12.0",
     "sodium-javascript": "^0.8.0",
     "urlpattern-polyfill": "10.0.0",
-    "vite-plugin-commonjs": "0.10.0",
-    "vite-plugin-node-stdlib-browser": "0.2.1",
     "workbox-build": "^6.5.2",
     "workbox-core": "^6.5.2",
     "workbox-precaching": "^7.1.0"

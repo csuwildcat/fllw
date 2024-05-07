@@ -1,6 +1,7 @@
 
 import { toWebStream } from "./streams";
 import * as protocols from './protocols';
+import { natives } from './helpers';
 
 setInterval(() => Datastore.cache = {}, 1000 * 60 * 60)
 
@@ -218,10 +219,9 @@ class Datastore {
       if (cached) return cached;
     }
     const record = await this.getProfileImage(type, options);
-    const blob = await record.data.blob();
+    const drl = natives.drl.fromRecord(record, true);
     record.cache = {
-      blob: blob,
-      uri: URL.createObjectURL(blob)
+      uri: drl
     }
     Datastore.setCache(did, type, record);
     return record;
@@ -326,10 +326,9 @@ class Datastore {
       throw error;
     }
     if (options.cache !== false) {
-      const blob = await record.data.blob();
+      const drl = natives.drl.fromRecord(record, true);
       record.cache = {
-        blob: blob,
-        uri: URL.createObjectURL(blob)
+        uri: drl
       }
     }
     return record;
@@ -363,10 +362,9 @@ class Datastore {
       const response = await this.createProtocolRecord('social', 'story/media', options);
       hero = response.record;
     }
-    const blob = await hero.data.blob();
+    const drl = natives.drl.fromRecord(hero, true);
     hero.cache = {
-      blob: blob,
-      uri: URL.createObjectURL(blob)
+      uri: drl
     }
     if (heroId !== hero.id) {
       data.hero = hero.id;

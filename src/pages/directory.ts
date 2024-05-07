@@ -5,7 +5,7 @@ import { consume } from '@lit/context';
 import { AppContext } from '../utils/context.js';
 import { DOM, notify, natives } from '../utils/helpers.js';
 
-import PageStyles from '../styles/page.css' with { type: 'css' };
+import PageStyles from '../styles/page.css' assert { type: 'css' };
 
 @customElement('page-directory')
 export class PageDirectory extends LitElement {

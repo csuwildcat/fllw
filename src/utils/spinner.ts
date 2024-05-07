@@ -1,5 +1,5 @@
 import { css, unsafeCSS } from 'lit';
-import { DOM } from './helpers';
+import { DOM } from './helpers.js';
 import '../components/global.js'
 
 const transitionDuration = 300;
@@ -38,15 +38,15 @@ export const SpinnerMixin = (BaseClass) => class extends BaseClass {
     };
   }
 
-  private #firstUpdatedPromise;
+  #firstUpdatedPromise;
 
-  private #spinnerTransitionEnd(e){
+  #spinnerTransitionEnd(e){
     if (e.propertyName === 'opacity' && getComputedStyle(e.target).opacity === '0') {
       e.target.remove();
     }
   }
 
-  private #createSpinnerElement() {
+  #createSpinnerElement() {
     const node = document.createElement('div');
           node.classList.add('spinner-mixin');
           node.ontransitionend = e => this.#spinnerTransitionEnd(e);
@@ -54,7 +54,7 @@ export const SpinnerMixin = (BaseClass) => class extends BaseClass {
     return node;
   }
 
-  async startSpinner(selector, options = {}){
+  async startSpinner(selector, options = {} as any){
     await this.#firstUpdatedPromise;
     const host = selector ? this.shadowRoot.querySelector(selector) : this.shadowRoot;
     let spinner = host.querySelector('.spinner-mixin');

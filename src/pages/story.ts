@@ -8,7 +8,7 @@ import '../components/markdown-editor.js'
 import { render as renderMarkdown } from '../utils/markdown.js';
 import { hashToGradient } from '../utils/colors.js';
 import { DOM, notify } from '../utils/helpers.js';
-import PageStyles from '../styles/page.css' with { type: 'css' };
+import PageStyles from '../styles/page.css' assert { type: 'css' };
 
 import '../components/w5-img'
 
@@ -23,6 +23,7 @@ export class PageStory extends LitElement {
 
       :host {
         overflow-x: hidden;
+        --hero-border-radius: 0.2em;
         --hero-background-padding: clamp(4em, 100vw, 6em);
       }
 
@@ -112,8 +113,7 @@ export class PageStory extends LitElement {
         z-index: 2;
       }
 
-      #editor::part(body),
-      #rendered_story {
+      #editor::part(body), #rendered_story {
         box-sizing: border-box;
         width: 100%;
         max-width: 680px;
@@ -130,13 +130,13 @@ export class PageStory extends LitElement {
       #rendered_story .markdown-body {
         flex: 1;
         margin: 1.5em 0 0;
+        padding: 0em 1em;
         background: none;
       }
 
       #editor::part(textarea) {
         width: 100%;
-        padding: 0em 1em;
-        box-sizing: content-box;
+        box-sizing: border-box;
         z-index: 2;
       }
 
@@ -148,44 +148,18 @@ export class PageStory extends LitElement {
         transition: color 0.3s ease, background-color 0.3s ease;
       }
 
-      #edit_hero_container {
+      .hero {
         position: sticky;
+        box-sizing: border-box;
         width: 100%;
+        min-height: 15em;
+        max-height: 20em;
+        border: 1px solid rgba(255 255 255 / 7%);
+        border-radius: var(--hero-border-radius);
         opacity: calc(1 - var(--scroll-position) / 310);
         transform: translateY(calc(var(--scroll-position)* 0.4px));
         will-change: transform, opacity;
         filter: blur(clamp(0px, calc(var(--scroll-position)* 0.05px), 2px));
-      }
-
-      #edit_hero_background {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        width: calc(100% + 1em);
-        height: calc(100% + 1em);
-        border-radius: var(--block-radius);
-        transform: translate(-50%, -50%);
-        z-index: 0;
-      }
-
-        #edit_hero_background::part(image)  {
-          filter: blur(16px);
-        }
-
-        #edit_hero_background::after {
-          width: 100%;
-          height: 100%;
-          border: none;
-          box-shadow: 0 0 5em 0em inset var(--body-bk);
-        }
-
-      #edit_hero {
-        width: 100%;
-        min-height: 15em;
-        max-height: 20em;
-        border-radius: calc(var(--block-radius) + -0.1em);
-        border: 1px solid rgba(255 255 255 / 7%);
-        border-bottom: 1px solid rgba(255 255 255 / 6%);
       }
 
       #edit_hero::after {
@@ -203,14 +177,13 @@ export class PageStory extends LitElement {
 
       #edit_hero[src][loaded] {
         background: none;
-      } 
+      }
 
-      /* #edit_hero::after {
-        display: none;
-      } */
-
-      #rendered_story .markdown-body {
-
+      #rendered_story .markdown-body img {
+        display: block;
+        width: 100%;
+        max-width: 80vw;
+        margin: 2em auto;
       }
 
       #view_panel .markdown-body > :first-child {
@@ -256,11 +229,11 @@ export class PageStory extends LitElement {
       }
 
       @media(max-width: 430px) {
-        #editor::part(body) {
+        #editor::part(body), #rendered_story {
           padding: 0;
         }
 
-        #edit_hero {
+        .hero {
           border-radius: 0;
         }
       }
@@ -329,7 +302,7 @@ export class PageStory extends LitElement {
       await this.storyLoaded;
       this.editor.fileHandler = async (file) => {
         const record = await this.storeMedia(file);
-        return `http://${this.story.author}/records/${record.id}`;
+        return `http://dweb/${this.story.author}/records/${record.id}`;
       }
       this.editor.content = this?.story?.cache?.json?.markdown;
       this.renderStory();
@@ -484,7 +457,7 @@ markdown: `# YOUR TITLE HERE
   render() {
     const published = this?.story?.published;
     const data = this?.story?.cache?.json || {};
-    const heroDRL = data?.hero && `http://${this.story.author.replace(':', '/')}/records/${data.hero}`;
+    const heroDRL = data?.hero && `http://dweb/${this.story.author}/records/${data.hero}`;
     return html`
       <section id="content" flex="column">
         <header id="header" flex="center-y">
@@ -512,19 +485,17 @@ markdown: `# YOUR TITLE HERE
         <sl-tab-group id="tabs" flex="fill">
           <sl-tab-panel id="view_panel" name="view" ?active="${!this.owner || this.panel === 'view'}">
             <div id="rendered_story">
+              <w5-img class="hero" src="${heroDRL || nothing}"></w5-img>
               ${this.renderedStory}
             </div>
           </sl-tab-panel>
           ${ !this.owner ? nothing : html`
             <sl-tab-panel id="edit_panel" name="edit" ?active="${this.panel === 'edit'}">
               <markdown-editor id="editor" @afterupdate="${e => this.handleDebouncedEditorUpdate(true)}">
-                <div id="edit_hero_container" slot="before-content">
-                  <w5-img id="edit_hero_background" class="hero" src="${heroDRL || nothing}"></w5-img>
-                  <w5-img id="edit_hero" class="hero" src="${heroDRL || nothing}">
-                    <sl-icon-button class="edit-button" name="pencil" size="medium" @click="${e => this.heroInput.click()}"></sl-icon-button>
-                    <input id="hero_input" type="file" accept="image/png, image/jpeg, image/gif" style="display: none" @change="${e => this.storeMedia(this.heroInput?.files?.[0], true)}" />
-                  </w5-img>
-                </div>
+                <w5-img id="edit_hero" class="hero" src="${heroDRL || nothing}" slot="before-content">
+                  <sl-icon-button class="edit-button" name="pencil" size="medium" @click="${e => this.heroInput.click()}"></sl-icon-button>
+                  <input id="hero_input" type="file" accept="image/png, image/jpeg, image/gif" style="display: none" @change="${e => this.storeMedia(this.heroInput?.files?.[0], true)}" />
+                </w5-img>
               </markdown-editor>
             </sl-tab-panel>
           `} 

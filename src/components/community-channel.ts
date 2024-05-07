@@ -29,7 +29,7 @@ Object.defineProperty(VirtualList, 'template', {
   }
 });
 
-import PageStyles from '../styles/page.css' with { type: 'css' };
+import PageStyles from '../styles/page.css' assert { type: 'css' };
 import { DOM, notify } from '../utils/helpers.js';
 import date from  '../utils/date.js';
 

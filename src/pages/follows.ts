@@ -4,7 +4,7 @@ import { ifDefined } from 'lit/directives/if-defined.js';
 
 import * as protocols from '../utils/protocols';
 import * as follows from '../utils/follows';
-import PageStyles from '../styles/page.css' with { type: 'css' };
+import PageStyles from '../styles/page.css' assert { type: 'css' };
 
 import { DOM, notify, natives } from '../utils/helpers.js';
 import '../components/profile-card'

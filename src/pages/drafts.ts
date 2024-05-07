@@ -4,7 +4,7 @@ import { customElement, query, property } from 'lit/decorators.js';
 
 import { DOM, notify } from '../utils/helpers.js';
 
-import PageStyles from '../styles/page.css' with { type: 'css' };
+import PageStyles from '../styles/page.css' assert { type: 'css' };
 import '../components/post-editor';
 import '../components/markdown-content'
 

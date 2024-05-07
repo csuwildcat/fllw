@@ -15,7 +15,7 @@ import './styles/global.css';
 import './components/global.js';
 import './styles/theme.js';
 import { DOM, notify, natives } from './utils/helpers.js';
-import PageStyles from  './styles/page.css' with { type: 'css' };
+import PageStyles from  './styles/page.css' assert { type: 'css' };
 
 import { SpinnerMixin, SpinnerStyles } from './utils/spinner.js';
 
@@ -33,22 +33,7 @@ import './pages/story.js';
 
 // const BASE_URL: string = (import.meta.env.BASE_URL).length > 2 ? (import.meta.env.BASE_URL).slice(1, -1) : (import.meta.env.BASE_URL);
 
-navigator.serviceWorker.register('/sw.js', { type: 'classic' })
-
-navigator.serviceWorker.addEventListener('message', async event => {
-  if (event.data && event.data.type === 'did_resolution') {
-    const did = event.data.did;
-    const port = event.ports[0];
-    const message = { type: 'did_resolution', did }
-    try { 
-      message.result = await DidResolver.resolve(did);
-    }
-    catch(error) {
-      message.error = error
-    }
-    port.postMessage(message);
-  }
-});
+// navigator.serviceWorker.register('/service-worker.js', { type: 'module' })
 
 const rootElement = document.documentElement;
 const rootStyles = rootElement.style;

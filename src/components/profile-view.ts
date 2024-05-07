@@ -11,7 +11,7 @@ import { DOM, notify, natives } from '../utils/helpers.js';
 import { render } from '../utils/markdown.js';
 import './global.js'
 
-import PageStyles from '../styles/page.css' with { type: 'css' };
+import PageStyles from '../styles/page.css' assert { type: 'css' };
 
 import '../components/w5-img'
 import '../components/invite-item';
@@ -29,6 +29,7 @@ export class ProfileView extends LitElement {
       :host {
         --avatar-size: clamp(6em, 18vw, 9em);
         --block-padding: calc(var(--avatar-size) * 0.2);
+        --hero-border-size: clamp(0.2em, 1vw, 0.4em);
         position: relative;
         display: flex;
         box-sizing: border-box;
@@ -71,6 +72,7 @@ export class ProfileView extends LitElement {
         width: 100%;
         height: var(--avatar-size);
         background: var(--deterministic-background);
+        border-bottom: var(--hero-border-size) solid rgba(0 0 0 / 30%);
       }
 
       #hero[src] {
@@ -107,7 +109,7 @@ export class ProfileView extends LitElement {
         --size: var(--avatar-size);
         position: absolute;
         background: var(--grey-lighter);
-        outline: var(--hero-border-size) solid rgb(0 0 0 / 15%);
+        outline: var(--hero-border-size) solid rgba(0 0 0 / 15%);
         box-shadow: 0 1px 1px 0px rgba(0 0 0 / 0.6);
         border-radius: 6px;
         z-index: 2;
@@ -597,7 +599,7 @@ export class ProfileView extends LitElement {
 
       <section id="profile_card" flex="column fill">
 
-        <w5-img id="hero" class="hero" src="${ifDefined(this.hero?.cache?.uri)}">
+        <w5-img id="hero" src="${ifDefined(this.hero?.cache?.uri)}">
           <sl-icon-button class="edit-button" name="pencil" size="medium" @click="${e => this.heroInput.click()}"></sl-icon-button>
           <input id="hero_input" type="file" accept="image/png, image/jpeg, image/gif" style="display: none" @change="${e => this.handleFileChange('hero', this.heroInput)}" />
         </w5-img>

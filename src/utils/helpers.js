@@ -41,6 +41,20 @@ const natives = {
     }
   },
   drl: {
+    async cache(drl, record, blob){
+      const cache = await caches.open('drl');
+      await cache.put(drl, new Response(blob || await record.data.blob(), {
+        headers: { 'Content-Type': record.dataFormat }
+      }));
+      return drl;
+    },
+    async fromRecord(record, cache, blob){
+      const drl = `https://dweb/${record.author}/records/${record.id}`;
+      if (cache) {
+        await this.cache(drl, record, blob);
+      }
+      return drl;
+    },
     create(did, { protocol = '', path = {}, params = {}, hash = '' }){
       let url = `dweb://${did}`;
       if (protocol) {

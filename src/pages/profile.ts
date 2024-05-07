@@ -5,7 +5,7 @@ import { ifDefined } from 'lit/directives/if-defined.js';
 import { DOM, notify, natives } from '../utils/helpers.js';
 import '../components/profile-view';
 
-import PageStyles from '../styles/page.css' with { type: 'css' };
+import PageStyles from '../styles/page.css' assert { type: 'css' };
 
 @customElement('page-profile')
 export class PageProfile extends LitElement {

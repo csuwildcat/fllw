@@ -11,7 +11,7 @@ import { SpinnerMixin, SpinnerStyles } from '../utils/spinner';
 
 import { ProfileCard } from './components/profile-card'
 
-import PageStyles from '../styles/page.css' with { type: 'css' };
+import PageStyles from '../styles/page.css' assert { type: 'css' };
 const transitionDuration = 300;
 
 @customElement('member-list')

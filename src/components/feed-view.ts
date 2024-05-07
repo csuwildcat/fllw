@@ -7,7 +7,7 @@ import ScrollStyles from '../styles/scroll.js'
 import examples from '../utils/example-markdown.js'
 import { DOM, notify } from '../utils/helpers.js';
 
-import PageStyles from '../styles/page.css' with { type: 'css' };
+import PageStyles from '../styles/page.css' assert { type: 'css' };
 import { DOM } from '../utils/helpers.js';
 import './global.js'
 

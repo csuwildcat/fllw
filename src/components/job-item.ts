@@ -6,7 +6,7 @@ import { format, intervalToDuration, formatDuration } from "date-fns";
 import { natives } from '../utils/helpers.js';
 import './global.js'
 
-import PageStyles from '../styles/page.css' with { type: 'css' };
+import PageStyles from '../styles/page.css' assert { type: 'css' };
 
 @customElement('job-item')
 export class JobItem extends LitElement {

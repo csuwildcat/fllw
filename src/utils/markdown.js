@@ -10,10 +10,10 @@ import gemoji from '@bytemd/plugin-gemoji'
 import mermaid from './mermaid-plugin'
 import highlight from '@bytemd/plugin-highlight'
 
-import BaseStyles from 'bytemd/dist/index.css' with { type: 'css' };
-import MathStyles from 'katex/dist/katex.css' with { type: 'css' };
-import HighlightStyles from 'highlight.js/styles/atom-one-dark.css' with { type: 'css' };
-import GithubStyles from 'github-markdown-css/github-markdown.css' with { type: 'css' };
+import BaseStyles from 'bytemd/dist/index.css' assert { type: 'css' };
+import MathStyles from 'katex/dist/katex.css' assert { type: 'css' };
+import HighlightStyles from 'highlight.js/styles/atom-one-dark.css' assert { type: 'css' };
+import GithubStyles from 'github-markdown-css/github-markdown.css' assert { type: 'css' };
 
 export const styles = css`${unsafeCSS([
   BaseStyles,
