@@ -79,8 +79,11 @@ export class ProfileView extends LitElement {
         content: "";
         position: absolute;
         bottom: 0;
+        height: 100%;
         width: 100%;
         border-bottom: var(--hero-border);
+        border-radius: var(--block-radius) var(--block-radius) 0 0;
+        box-shadow: 0 7px 2px 0px rgba(255 255 255 / 0.125) inset;
         z-index: 2;
       }
 
@@ -189,9 +192,13 @@ export class ProfileView extends LitElement {
         margin: 0 0 2em;
       }
 
-      #profile_panel section :last-child {
-        margin-bottom: 0;
+      #profile_panel section:last-child {
+        margin: 0 0 1em;
       }
+
+      /* #profile_panel section :last-child {
+        margin-bottom: 0;
+      } */
 
       :host(:not([owner])) #profile_panel section:has([empty]) {
         display: none;
@@ -233,14 +240,26 @@ export class ProfileView extends LitElement {
         margin: 0 0 1.5em;
       }
 
-      .job-group:not(:last-child) {
-        margin: 0 0 2em;
-        padding: 0 0 1em;
-        border-bottom: 1px solid rgba(255 255 255 / 0.05)
+      #job_groups::before {
+        content: "";
+        display: block;
+      }
+
+      .job-group {
+        margin: 1.25em 0 0;
+        padding: 1.75em 0 0.5em;
+        border-top: 1px solid rgba(255 255 255 / 0.05)
+      }
+
+      .job-group:has([latest-job]) {
+        order: 1000000 !important;
+        margin-top: 0;
+        padding-top: 0.25em;
+        border: none;
       }
 
       .job:not(:last-child) {
-        margin: 0 0 1em;
+        margin: 0 0 1.5em;
       }
 
       .job img {
@@ -251,17 +270,21 @@ export class ProfileView extends LitElement {
         border-radius: 6px;
       }
 
-      .job > div:first-child {
+      .job .gutter {
         min-width: 4em;
         margin: 0 1em 0 0;
         font-size: clamp(0.6rem, 3vw, 1rem);
       }
 
-      .job:not(:first-child) > div:first-child img {
+      .job .content > :last-child {
+        margin-bottom: 0;
+      }
+
+      .job:not(:first-child) .gutter img {
         width: 2.6em;
       }
 
-      .job:not(:last-child) > div:first-child::after {
+      .job:not(:last-child) .gutter::after {
         content: "";
         display: block;
         flex: 1;
@@ -271,7 +294,7 @@ export class ProfileView extends LitElement {
         border-radius: 3px;
       }
 
-      .job > div:first-child sl-icon-button {
+      .job .gutter sl-icon-button {
         margin: 0.6em 0 0;
       }
 
@@ -295,24 +318,35 @@ export class ProfileView extends LitElement {
         display: none;
       }
 
-      #stories_list a {
+      #stories_list > a {
         display: flex;
-        position: relative;
         height: 170px;
-        overflow: hidden;
-        background: #333;
-        margin: 1em 0;
-        padding: 0.6em 1em;
+        margin: 0em 0 1.25em;
+        padding: 0.75em 0.8em 1.25em;
+        text-decoration: none;
+        color: inherit;
+        border-bottom: 2px dotted rgba(255 255 255 / 0.05);
+      }
+
+      #stories_list > a > img {
+        margin-right: 1.25em;
+        border-radius: 0.4em;
+      }
+
+      #stories_list .markdown-body {
+        position: relative;
         overflow: hidden;
       }
 
-      #stories_list a:after {
+      #stories_list .markdown-body:after {
         content: "";
         display: block;
         position: absolute;
         bottom: 0;
         width: 100%;
-        box-shadow: 0 0 2px 2px #333;
+        padding: 2em 0 0.8em;
+        text-align: center;
+        background: linear-gradient(transparent, var(--grey) 90%);
       }
 
       #stories_list a .markdown-body > :first-child {
@@ -354,6 +388,9 @@ export class ProfileView extends LitElement {
 
   @property({ type: String, reflect: true })
   panel = 'profile';
+
+  @property({ type: Boolean, reflect: true })
+  loaded;
 
   @property({ type: Boolean, reflect: true })
   loading;
@@ -452,6 +489,7 @@ export class ProfileView extends LitElement {
   }
 
   async loadProfile(did){
+    this.loaded = false;
     this.loading = true;
     try {
       await this.context.initialize;
@@ -487,10 +525,12 @@ export class ProfileView extends LitElement {
         education: []
       };
       this.loadingError = false;
+      this.loaded = true;
     }
     catch(e) {
       this.loadingError = true;
     }
+    this.loadStories();
     this.loading = false;
   }
 
@@ -546,7 +586,6 @@ export class ProfileView extends LitElement {
       for (const entry of formData.entries()) {
         natives.deepSet(this.job, entry[0], entry[1]?.trim ? entry[1].trim() : entry[1] || undefined);
       }
-      console.log(this.job);
       try {
         if (!this.careerData.jobs.includes(this.job)) {
           this.careerData.jobs.push(this.job);
@@ -597,10 +636,17 @@ export class ProfileView extends LitElement {
 
   render(){
 
-    const now = new Date();
+    const today = new Date();
+    const now = today.getTime();
+    let latestJob = { startTime: now, endTime: 0 };
     const sortedJobs = this?.careerData?.jobs?.reduce((obj, job) => {
       const employer = job?.employer?.trim().toLowerCase() || '';
       (obj[employer] = obj[employer] || []).push(job)
+      job.startTime = new Date(job.start_date).getTime();
+      job.endTime = job.end_date ? new Date(job.end_date).getTime() : now;
+      if (job.endTime > latestJob.endTime || job.endTime === latestJob.endTime && job.startTime <= latestJob.startTime) {
+        latestJob = job;
+      }
       return obj;
     }, {})
 
@@ -667,14 +713,13 @@ export class ProfileView extends LitElement {
               <h3>Career</h3>
               <sl-icon-button class="edit-button" name="plus-lg" variant="default" size="medium" @click="${ e => this.showJobModal() }"></sl-icon-button>
             </header>
-            <div class="section-content" empty-text="Where have you worked?" ?empty="${!this.careerData?.jobs?.length}">
+            <div id="job_groups" flex="column-reverse" class="section-content" empty-text="Where have you worked?" ?empty="${!this.careerData?.jobs?.length}">
               ${
                 Object.keys(sortedJobs).map((employer, i) => {
-                  const group = sortedJobs[employer];
-                  group.sort((a, b) => {
-                    return (b.end_date ? new Date(b.end_date) : now) - (a.end_date ? new Date(a.end_date) : now);
-                  })
-                  return html`<ul class="job-group" style="order: ${Math.round(((group[0].end_date ? new Date(group[0].end_date) : now).getTime() + group.length) / 86_400_000)}">${ 
+                  const group = sortedJobs[employer] = sortedJobs[employer].sort((a, b) => b.endTime - a.endTime);
+                  const order = Math.round(group[0].endTime / 100_000_000);
+
+                  return html`<ul class="job-group" style="order: ${order}">${ 
                     group.map(job => {
                       
                       if (!job.id) job.id = natives.randomString(32)
@@ -684,18 +729,18 @@ export class ProfileView extends LitElement {
                       const duration = formatDuration(
                         intervalToDuration({
                           start: startDate,
-                          end: endDate || new Date()
+                          end: endDate || today
                         }),
                         { format: ['years', 'months'] }
                       )
 
                       return job ? html`
-                        <li class="job" flex>
-                          <div flex="column center-x">
+                        <li class="job" flex ?latest-job="${job === latestJob || nothing}">
+                          <div class="gutter" flex="column center-x">
                             <img src="https://t3.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=${job.url}&size=128"/>
                             ${this.owner && html`<sl-icon-button name="pencil" variant="default" size="medium" @click="${ e => this.showJobModal(job.id) }"></sl-icon-button>`}
                           </div>
-                          <div flex="column align-start">
+                          <div class="content" flex="column align-start">
                             <strong>${job?.title}</strong>
                             <small>${job?.employer}</small>
                             <small>${format(startDate, 'MMM yyy')} - ${endDate ? format(endDate, 'MMM yyy') : 'Present'} · ${duration}</small>
@@ -714,12 +759,15 @@ export class ProfileView extends LitElement {
         <sl-tab-panel id="stories_panel" name="stories" ?active="${this.panel === 'stories' || nothing}">
           <div id="stories_list">
             ${
-              this?.stories?.map(story => html`
-                <a href="profiles/${story.author}/stories/${story.id}" flex>
-                  <!-- <h3>${storyUtils.getTitle(story.cache.json.markdown)}</h3> -->
-                  <div>${render(story.cache.json.markdown || '')}</div>
-                </a>
-              `)
+              this?.stories?.map(story => {
+                const data = story.cache.json; 
+                return html`
+                  <a href="profiles/${story.author}/stories/${story.id}" flex>
+                    <!-- <h3>${storyUtils.getTitle(story.cache.json.markdown)}</h3> -->
+                    <img src="https://dweb/${story.author}/records/${data.hero}" />
+                    ${render(data.markdown || '')}
+                  </a>
+              `})
             }
           </div>
           <div default-content="placeholder">

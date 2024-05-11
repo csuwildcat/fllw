@@ -12,7 +12,7 @@ import highlight from '@bytemd/plugin-highlight'
 
 import BaseStyles from 'bytemd/dist/index.css' assert { type: 'css' };
 import MathStyles from 'katex/dist/katex.css' assert { type: 'css' };
-import HighlightStyles from 'highlight.js/styles/atom-one-dark.css' assert { type: 'css' };
+import HighlightStyles from 'highlight.js/styles/atom-one-dark-reasonable.min.css' assert { type: 'css' };
 import GithubStyles from 'github-markdown-css/github-markdown.css' assert { type: 'css' };
 
 export const styles = [
@@ -35,7 +35,7 @@ export const plugins = [
   }),
   breaks(),
   gemoji(),
-  mermaid(),
+  mermaid({ theme: 'dark' }),
   highlight()
 ]
 

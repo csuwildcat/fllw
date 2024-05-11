@@ -36,7 +36,13 @@ export class PageDirectory extends LitElement {
       }
 
       #profile_view {
+        opacity: 0;
         margin: 3em auto;
+        transition: opacity 0.3s ease;
+      }
+
+      #profile_view[loaded] {
+        opacity: 1;
       }
 
       #profile_view[loaded] ~ #placeholder {

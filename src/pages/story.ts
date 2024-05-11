@@ -161,6 +161,7 @@ export class PageStory extends LitElement {
         transform: translateY(calc(var(--scroll-position)* 0.4px));
         will-change: transform, opacity;
         filter: blur(clamp(0px, calc(var(--scroll-position)* 0.05px), 2px));
+        z-index: -1;
       }
 
       #edit_hero::after {
@@ -190,6 +191,11 @@ export class PageStory extends LitElement {
       #view_panel .markdown-body > :first-child {
         margin-top: 0;
         padding-top: 0;
+      }
+
+      #rendered_story .bytemd-mermaid > svg {
+        display: block;
+        margin: 0 auto;
       }
 
 
