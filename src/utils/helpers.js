@@ -41,7 +41,7 @@ const natives = {
     }
   },
   drl: {
-    async cache(drl, record, blob){
+    async cache(drl, record, blob){   
       const cache = await caches.open('drl');
       await cache.put(drl, new Response(blob || await record.data.blob(), {
         headers: { 'Content-Type': record.dataFormat }

@@ -29,11 +29,7 @@ import './pages/settings.js';
 import './pages/profile.js';
 import './pages/story.js';
 
-// import { ProfileCard } from './components/profile-card'
-
 // const BASE_URL: string = (import.meta.env.BASE_URL).length > 2 ? (import.meta.env.BASE_URL).slice(1, -1) : (import.meta.env.BASE_URL);
-
-// navigator.serviceWorker.register('/service-worker.js', { type: 'module' })
 
 const rootElement = document.documentElement;
 const rootStyles = rootElement.style;

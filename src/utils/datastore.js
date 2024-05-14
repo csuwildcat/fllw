@@ -1,5 +1,4 @@
 
-import { toWebStream } from "./streams";
 import * as protocols from './protocols';
 import { natives } from './helpers';
 
@@ -219,11 +218,14 @@ class Datastore {
       if (cached) return cached;
     }
     const record = await this.getProfileImage(type, options);
-    const drl = natives.drl.fromRecord(record, true);
-    record.cache = {
-      uri: drl
+    console.log(record);
+    if (record) {
+      const drl = await natives.drl.fromRecord(record, true);
+      record.cache = {
+        uri: drl
+      }
+      Datastore.setCache(did, type, record);
     }
-    Datastore.setCache(did, type, record);
     return record;
   }
 
@@ -326,7 +328,7 @@ class Datastore {
       throw error;
     }
     if (options.cache !== false) {
-      const drl = natives.drl.fromRecord(record, true);
+      const drl = await natives.drl.fromRecord(record, true);
       record.cache = {
         uri: drl
       }
@@ -362,7 +364,7 @@ class Datastore {
       const response = await this.createProtocolRecord('social', 'story/media', options);
       hero = response.record;
     }
-    const drl = natives.drl.fromRecord(hero, true);
+    const drl = await natives.drl.fromRecord(hero, true);
     hero.cache = {
       uri: drl
     }

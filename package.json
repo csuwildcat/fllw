@@ -9,9 +9,8 @@
     "dev": "npm run dev-server",
     "dev-task": "vite",
     "prebuild": "node scripts/prebuild.js",
-    "build": "cp node_modules/@web5/dids/dist/browser.js public/web5-dids.js && tsc && vite build",
-    "doitlive": "cp node_modules/@web5/dids/dist/browser.js public/web5-dids.js && tsc --skipLibCheck && vite build",
-    "start": "cp node_modules/@web5/dids/dist/browser.js public/web5-dids.js && npm run prebuild && npm run dev",
+    "build": "tsc && vite build",
+    "start": "npm run prebuild && npm run dev",
     "start-remote": "vite --host"
   },
   "author": "",
