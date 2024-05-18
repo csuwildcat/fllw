@@ -120,8 +120,9 @@ var DOM = {
   },
   addEventDelegate(type, selector, fn, options = {}){
     let listener = e => {
-      let match = e.target.closest(selector);
-      if (match && (!options.avoid || !e.target.closest(options.avoid))) fn(e, match);
+      const target = e.composedPath ? e.composedPath()[0] : e.target;
+      let match = target.closest(selector);
+      if (match && (!options.avoid || !target.closest(options.avoid))) fn(e, match);
     }
     (options.container || document).addEventListener(type, listener, options);
     return listener;

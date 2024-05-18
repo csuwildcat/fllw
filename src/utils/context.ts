@@ -2,6 +2,7 @@ import { createContext, provide } from '@lit/context';
 
 import { Web5 } from '@web5/api';
 import { Datastore } from './datastore.js';
+import * as follows from './follows.js';
 
 const initialState = {
   instance: null,
@@ -10,7 +11,7 @@ const initialState = {
   hero: null,
   social: null,
   career: null,
-  drafts: [],
+  follows: null,
 };
 
 async function importLatestRecords(did, current, latest){
@@ -39,7 +40,7 @@ export const AppContextMixin = (BaseClass) => class extends BaseClass {
       hero: null,
       social: null,
       career: null,
-      drafts: new Map(),
+      follows: null,
     }
   }
 
@@ -88,6 +89,15 @@ export const AppContextMixin = (BaseClass) => class extends BaseClass {
       career: records[3]
     });
     return did;
+  }
+
+  async loadFollows(force){
+    await this.initialize;
+    if (!this.context.follows || force) {
+      const { records } = await datastore.queryFollows();
+      this.updateState({ follows: records });
+    }
+    return this.context.follows;
   }
 
   async setProfileImage(type, file){

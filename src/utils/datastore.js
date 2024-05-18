@@ -393,25 +393,22 @@ class Datastore {
   queryFollows = (options = {}) => this.queryProtocolRecords('social', 'follow', options)
 
   async toggleFollow(did, follow){
-    await datastore.queryFollows({ recipient: did, latestRecord: true }).then(async (record) => {
-      if (record) {
-        console.log(record);
-        if (follow && record.isDeleted) record.update();
-        else if (!follow) {
-          const { record: deleted } = await this.dwn.records.delete({
-            message: {
-              recordId: record.id,
-            }
-          });
-          record = deleted;
+    var record = await datastore.queryFollows({ recipient: did, latestRecord: true })
+    if (!record) {
+      var { record } = await datastore.createProtocolRecord('social', 'follow', { recipient: did, dataFormat: 'application/json' })
+      return record;
+    }
+    else if (record?.isDeleted) {
+      record.update();
+    }
+    else if (!follow) {
+      var { record } = await this.dwn.records.delete({
+        message: {
+          recordId: record.id,
         }
-        return record;
-      }
-      else {
-        const { record, status } = await datastore.createProtocolRecord('social', 'follow', { recipient: did, dataFormat: 'application/json' })
-        return record;
-      }
-    })
+      });
+    }
+    return record;
   }
 
   async sendInvite(recipient, link, options = {}) {

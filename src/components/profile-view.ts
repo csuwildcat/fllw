@@ -13,8 +13,9 @@ import './global.js'
 
 import PageStyles from '../styles/page.css' assert { type: 'css' };
 
-import '../components/w5-img'
-import '../components/invite-item';
+import './w5-img'
+import './detail-box'
+import './invite-item';
 
 @customElement('profile-view')
 export class ProfileView extends LitElement {
@@ -188,19 +189,19 @@ export class ProfileView extends LitElement {
         padding: 0 0 5rem;
       }
 
-      #profile_panel section {
+      #profile_panel > section {
         margin: 0 0 2em;
       }
 
-      #profile_panel section:last-child {
+      #profile_panel > section:last-child {
         margin: 0 0 1em;
       }
 
-      /* #profile_panel section :last-child {
+      /* #profile_panel > section :last-child {
         margin-bottom: 0;
       } */
 
-      :host(:not([owner])) #profile_panel section:has([empty]) {
+      :host(:not([owner])) #profile_panel > section:has([empty]) {
         display: none;
       }
 
@@ -236,13 +237,22 @@ export class ProfileView extends LitElement {
         font-size: 1.5em;
       }
 
+      #profile_career {
+        position: relative;
+      }
+
       #profile_career header {
         margin: 0 0 1.5em;
       }
 
-      #job_groups::before {
-        content: "";
-        display: block;
+      #job_groups {
+        max-height: 20em;
+      }
+
+      #job_groups::part(content) {
+        display: flex;
+        flex-direction: column-reverse;
+        justify-content: flex-end;
       }
 
       .job-group {
@@ -713,7 +723,7 @@ export class ProfileView extends LitElement {
               <h3>Career</h3>
               <sl-icon-button class="edit-button" name="plus-lg" variant="default" size="medium" @click="${ e => this.showJobModal() }"></sl-icon-button>
             </header>
-            <div id="job_groups" flex="column-reverse" class="section-content" empty-text="Where have you worked?" ?empty="${!this.careerData?.jobs?.length}">
+            <detail-box id="job_groups" flex="column-reverse end" class="section-content" empty-text="Where have you worked?" ?empty="${!this.careerData?.jobs?.length}">
               ${
                 Object.keys(sortedJobs).map((employer, i) => {
                   const group = sortedJobs[employer] = sortedJobs[employer].sort((a, b) => b.endTime - a.endTime);
@@ -752,7 +762,7 @@ export class ProfileView extends LitElement {
                   }</ul>`;
                 })
               }
-            </div>
+            </detail-box>
           </section>  
         </sl-tab-panel>
 

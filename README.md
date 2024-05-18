@@ -1,6 +1,6 @@
-# Web5 App
+# Fllw
 
-A starter codebase for generating Decentralized Web Apps based on [pwa-starter](https://github.com/pwa-builder/pwa-starter) with [Web5](https://developer.tbd.website/docs/web5/) already integrated.
+A reference app for building Decentralized Web Apps based on [pwa-starter](https://github.com/pwa-builder/pwa-starter) with [Web5](https://developer.tbd.website/docs/web5/) already integrated.
 
 ## Installation / Usage
 
@@ -16,8 +16,8 @@ npm run server
 In a new terminal window, run the following:
 
 ```bash
-git clone https://github.com/csuwildcat/web5-collab-app
-cd web5-collab-app
+git clone https://github.com/csuwildcat/fllw
+cd fllw
 npm install
 npm run dev
 ```

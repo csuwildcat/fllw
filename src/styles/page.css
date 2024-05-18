@@ -90,7 +90,7 @@ sl-button sl-icon {
 
 [flex~="column"][flex~="end"],
 [flex~="column-reverse"][flex~="end"] {
-  justify-content: end;
+  justify-content: flex-end;
 }
 
 [flex~="column-reverse"] {

@@ -54,7 +54,7 @@ export const SpinnerMixin = (BaseClass) => class extends BaseClass {
     return node;
   }
 
-  async startSpinner(selector, options = {} as any){
+  async startSpinner(selector?, options = {} as any){
     await this.#firstUpdatedPromise;
     const host = selector ? this.shadowRoot.querySelector(selector) : this.shadowRoot;
     let spinner = host.querySelector('.spinner-mixin');
@@ -69,13 +69,13 @@ export const SpinnerMixin = (BaseClass) => class extends BaseClass {
     await DOM.delay(transitionDuration);
   }
 
-  async stopSpinner(selector){
+  async stopSpinner(selector?){
     const host = selector ? this.shadowRoot.querySelector(selector) : this.shadowRoot;
     const spinner = host.querySelector('.spinner-mixin');
     await spinner?._spinnerMixinDelay;
     spinner?.removeAttribute?.('spinner-show');
     if (document.visibilityState === 'hidden') {
-      spinner.remove();
+      spinner?.remove();
     }
   }
 

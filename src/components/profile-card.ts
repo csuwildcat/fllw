@@ -1,9 +1,9 @@
 import { LitElement, html, css, nothing } from 'lit';
 import { customElement, query } from 'lit/decorators.js';
-import { ifDefined } from 'lit/directives/if-defined.js';
 
 import { DOM } from '../utils/helpers.js';
-import { SpinnerMixin, SpinnerStyles } from '../utils/spinner';
+import { profile as profileProtocol } from '../utils/protocols.js';
+import { SpinnerMixin, SpinnerStyles } from '../utils/spinner.js';
 import './global.js'
 
 import '../components/w5-img'
@@ -73,6 +73,7 @@ export class ProfileCard extends SpinnerMixin(LitElement) {
 
       p {
         margin: 0.3em 0 0;
+        white-space: pre-wrap;
       }
 
       slot[name="start"]:not(:slotted) {
@@ -168,12 +169,8 @@ export class ProfileCard extends SpinnerMixin(LitElement) {
       }
     });
     try {
-      const [avatar, social] = await Promise.all([
-        datastore.readAvatar({ from: did }),
-        datastore.getSocial({ from: did })
-      ])
-      this.avatarDataUri = avatar.cache.uri || undefined;
-      this.socialData = await social.cache.json || {};
+      const social = await datastore.getSocial({ from: did })
+      this.socialData = social.cache.json || {};
       this.requestUpdate();
       await DOM.skipFrame();
       this.removeAttribute('loading')
@@ -199,7 +196,7 @@ export class ProfileCard extends SpinnerMixin(LitElement) {
   render() {
     return html`
       <slot name="start"></slot>
-      <w5-img part="image" src="${ ifDefined(this.avatarDataUri) }" fallback="person"></w5-img>
+      <w5-img part="image" src="${this.did ? `https://dweb/${this.did}/read/protocols/${encodeURIComponent(profileProtocol.uri)}/avatar` : nothing}" fallback="person"></w5-img>
       <div id="content">
         <h3 part="name">${this?.socialData?.displayName || 'Anon'}</h3>
         <slot name="subtitle"></slot>
