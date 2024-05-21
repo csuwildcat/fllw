@@ -340,7 +340,7 @@ export class ProfileView extends LitElement {
 
       #stories_list > a > w5-img {
         --size: clamp(4em, 20vw, 10em);
-        margin-right: 1.25em;
+        margin-right: 1.5em;
         border-radius: 0.4em;
       }
 

@@ -325,7 +325,6 @@ export class PageStory extends LitElement {
     this.owner = this.did === this.context.did;
     const currentStory = this?.story?.id;
     if (!currentStory || currentStory !== path.story) {
-      console.log(path.story);
       if (path.story && path.story !== 'new') {
         try {
           this.story = await datastore.readStory(path.story, this.owner ? {} : { from: this.did });
@@ -346,64 +345,26 @@ markdown: `# YOUR TITLE HERE
 - You can use markdown
 - Add a hero image to your story
 - Have fun!
-
-
-
-
-
-
-
-
-
-
-
-.
-
-
-
-
-
-
-
-
-
-
-
-.
-
-
-
-
-
-
-
-
-
-
-
-
-.
 `
           }
         });
         this.panel = 'edit';
         router.replaceState(`/profiles/${this.did}/stories/${this.story.id}?mode=edit`);
       }
-      console.log(this.story);
       const data = this.story?.cache?.json;
       if (data) {
-        this.setTitle(data.markdown);
+        this.editor.content = data.markdown;
+        this.setTitle(data.markdown); 
+        this.renderStory();
         if (data.hero) {
           datastore.readStoryMedia(data.hero).then(record => {
             this.story._hero = record;
-            console.log(record);
             this.requestUpdate();
           });
         }
       }
       this.deterministicBackground = hashToGradient(this.story.id);
     }
-    
     this._storyLoadResolve();
   }
 
