@@ -62,9 +62,9 @@ export class PageHome extends SpinnerMixin(LitElement) {
 
   updated(){
     if (this.context.did && !this.context.follows) {
-      this.startSpinner('#placeholder', { minimum: 1000 });
+      this.startSpinner();
     }
-    else this.stopSpinner('#placeholder');
+    else this.stopSpinner();
   }
 
   resolveDid(){
@@ -72,27 +72,29 @@ export class PageHome extends SpinnerMixin(LitElement) {
   }
 
   render() {
-    return html`
-      <div id="placeholder" default-content="cover firstrun">
-        ${
-          !this.context.did ?
-            html`
-              <h1>Welcome, let's get started.</h1>
-              <sl-button variant="primary" slot="navbar" @click="${ e => this.context.instance.connectModal.show() }">
-                <sl-icon slot="prefix" name="box-arrow-in-right"></sl-icon>
-                Connect
-              </sl-button>
-              <sl-icon name="workplace"></sl-icon> 
-            ` :
-            this.context.follows ?
-              this.context.follows.length ?
-                this.context.follows.map(follow => {
-                  return html`${follow.recipient}`
-                }) :
-                config.suggestedFollows.map(did => html`<profile-card did="${did}"></profile-card>`) :
-              nothing
-        }
-      </div>
-    `;
+    const showIntro = false;
+    if (!showIntro && this.context.did) {
+      const follows = this.context.follows;
+      if (follows?.length) {
+        return this.context.follows.map(follow => {
+          return html`${follow.recipient}`
+        })
+      }
+      else {
+        return config.suggestedFollows.map(did => html`<profile-card did="${did}"></profile-card>`)
+      }
+    }
+    else {
+      return html`
+        <div id="placeholder" default-content="cover firstrun">
+          <h1>Welcome, let's get started.</h1>
+          <sl-button variant="primary" slot="navbar" @click="${ e => this.context.instance.connectModal.show() }">
+            <sl-icon slot="prefix" name="box-arrow-in-right"></sl-icon>
+            Connect
+          </sl-button>
+          <sl-icon name="workplace"></sl-icon> 
+        </div>
+      `
+    }
   }
 }

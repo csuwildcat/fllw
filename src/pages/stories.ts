@@ -10,12 +10,12 @@ import { hashToGradient } from '../utils/colors.js';
 import { DOM, notify } from '../utils/helpers.js';
 import PageStyles from '../styles/page.css' assert { type: 'css' };
 
-import '../components/w5-img'
+import '../components/w5-img.js'
 
 const matchTitleRegex = /\s*#\s+([^\n]+)/;
 
-@customElement('page-story')
-export class PageStory extends LitElement {
+@customElement('page-stories')
+export class PageStories extends LitElement {
 
   static styles = [
     PageStyles,

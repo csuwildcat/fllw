@@ -330,7 +330,7 @@ export class ProfileView extends LitElement {
 
       #stories_list > a {
         display: flex;
-        height: 170px;
+        max-height: 11em;
         margin: 0em 0 1.25em;
         padding: 0.75em 0.8em 1.25em;
         text-decoration: none;
@@ -338,14 +338,28 @@ export class ProfileView extends LitElement {
         border-bottom: 2px dotted rgba(255 255 255 / 0.05);
       }
 
-      #stories_list > a > img {
+      #stories_list > a > w5-img {
+        --size: clamp(4em, 20vw, 10em);
         margin-right: 1.25em;
         border-radius: 0.4em;
       }
 
       #stories_list .markdown-body {
         position: relative;
+        font-size: 0.85em;
         overflow: hidden;
+      }
+
+      #stories_list .markdown-body h1 {
+        font-size: 1.75em;
+      }
+
+      #stories_list .markdown-body h2 {
+        font-size: 1.6em;
+      }
+
+      #stories_list .markdown-body h3 {
+        font-size: 1.45em;
       }
 
       #stories_list .markdown-body:after {
@@ -385,6 +399,25 @@ export class ProfileView extends LitElement {
 
       .label-on-left::part(form-control-help-text) {
         grid-column-start: 2;
+      }
+
+      @media(max-width: 500px) {
+        #hero::after {
+          display: none;
+        }
+
+        #stories_list > a {
+          flex-direction: column;
+          height: auto;
+          max-height: 20em;
+          padding: 0.75em 0 1.25em;
+        }
+
+        #stories_list > a > w5-img {
+          --size: 100%;
+          max-height: 10em;
+          margin: 0 0 1em;
+        }
       }
 
     `
@@ -770,12 +803,14 @@ export class ProfileView extends LitElement {
           <div id="stories_list">
             ${
               this?.stories?.map(story => {
-                const data = story.cache.json; 
+                const data = story.cache.json;
+                const node = render(data.markdown || '');
+                Array.from(node.children).slice(3).forEach(child => child.remove())
                 return html`
                   <a href="profiles/${story.author}/stories/${story.id}" flex>
                     <!-- <h3>${storyUtils.getTitle(story.cache.json.markdown)}</h3> -->
-                    <img src="https://dweb/${story.author}/records/${data.hero}" />
-                    ${render(data.markdown || '')}
+                    <w5-img src="https://dweb/${story.author}/records/${data.hero}"></w5-img>
+                    ${node}
                   </a>
               `})
             }
@@ -783,7 +818,7 @@ export class ProfileView extends LitElement {
           <div default-content="placeholder">
             ${ this.owner ? html`
               <sl-icon name="file-earmark-richtext"></sl-icon>
-              <sl-button href="/profiles/${this.did}/stories">
+              <sl-button href="/profiles/${this.did}/stories/new">
                 <sl-icon name="plus-lg" slot="prefix"></sl-icon>
                 Write your first story
               </sl-button>
