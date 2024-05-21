@@ -164,6 +164,21 @@ export class PageStory extends LitElement {
         z-index: -1;
       }
 
+      .hero profile-card {
+        position: absolute;
+        top: 0.5em;
+        left: 0.5em;
+        padding: 0.3em;
+        font-size: 0.7em;
+        background: rgba(0 0 0 / 50%);
+        z-index: 2;
+      }
+
+      .hero profile-card::part(image) {
+        --size: 1.5rem;
+        margin-right: 0.75em;
+      }
+
       #edit_hero::after {
         display: none;
       }
@@ -454,7 +469,9 @@ markdown: `# YOUR TITLE HERE
         <sl-tab-group id="tabs" flex="fill">
           <sl-tab-panel id="view_panel" name="view" ?active="${!this.owner || this.panel === 'view'}">
             <div id="rendered_story">
-              <w5-img class="hero" src="${heroDRL || nothing}"></w5-img>
+              <w5-img class="hero" src="${heroDRL || nothing}">
+                ${ this?.story?.author ? html`<profile-card did="${this.story.author}" minimal></profile-card>` : nothing }
+              </w5-img>
               ${this.renderedStory}
             </div>
           </sl-tab-panel>
