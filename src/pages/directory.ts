@@ -3,24 +3,33 @@ import { customElement, query, property } from 'lit/decorators.js';
 import { consume } from '@lit/context';
 
 import { AppContext } from '../utils/context.js';
+import { SpinnerMixin, SpinnerStyles } from '../utils/spinner.js';
 import { DOM, notify, natives } from '../utils/helpers.js';
 
 import PageStyles from '../styles/page.css' assert { type: 'css' };
 
 @customElement('page-directory')
-export class PageDirectory extends LitElement {
+export class PageDirectory extends SpinnerMixin(LitElement) {
 
   @consume({context: AppContext, subscribe: true})
   context;
 
   static styles = [
     PageStyles,
+    SpinnerStyles,
     css`
 
       #search_bar {
+        position: sticky;
+        top: var(--header-height);
+        left: 0;
+        right: 0;
         padding: 0.75em 0.75em 0.7em;
-        background: rgba(255, 255, 255, 0.05);
-        border-bottom: 1px solid rgba(255,255,255,0.05);
+        background: rgba(50, 50, 50, 0.6);
+        border-bottom: 1px solid rgba(100,100,100,0.1);
+        backdrop-filter: blur(10px) saturate(100%);
+        -webkit-backdrop-filter: blur(10px) saturate(100%);
+        z-index: 2;
       }
 
       #search_bar sl-input {
@@ -38,7 +47,8 @@ export class PageDirectory extends LitElement {
       #profile_view {
         opacity: 0;
         margin: 3em auto;
-        transition: opacity 0.3s ease;
+        transition: opacity 0.3s ease 1s;
+        z-index: 0;
       }
 
       #profile_view[loaded] {
@@ -48,6 +58,10 @@ export class PageDirectory extends LitElement {
       #profile_view[loaded] ~ #placeholder {
         opacity: 0;
         pointer-events: none;
+      }
+
+      .spinner-mixin {
+        z-index: 1;
       }
 
     `
@@ -75,10 +89,14 @@ export class PageDirectory extends LitElement {
 
   lookupProfile(did){
     did = did || this.didInput.value;
-    if (did === this.context.did) {
+    if (did === this.profileView.did) {
+      return;
+    }
+    else if (did === this.context.did) {
       router.navigateTo(`/profiles/${did}`);
     }
     else {
+      this.startSpinner(null, { minimum: 1000 });
       this.profileView.did = did
     }
   }
@@ -98,7 +116,7 @@ export class PageDirectory extends LitElement {
         ></sl-input>
         <sl-button variant="primary" size="small" @click="${ e => this.lookupProfile() }" slot="suffix">Find</sl-button>
       </div>
-      <profile-view id="profile_view" did="${this.did || nothing}"></profile-view>
+      <profile-view id="profile_view" did="${this.did || nothing}" @profile-view-load-complete="${e => this.stopSpinner()}"></profile-view>
       <div id="placeholder" default-content="cover placeholder">
         <sl-icon name="search"></sl-icon>
         <p>Enter a DID above to view a profile.</p>

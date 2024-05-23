@@ -4,7 +4,7 @@ A reference app for building Decentralized Web Apps based on [pwa-starter](https
 
 ## Installation / Usage
 
-First, clone and run [dwn-server](https://github.com/TBD54566975/dwn-server) for local development:
+First, clone and run [dwn-server](https://github.com/TBD54566975/dwn-server) for local development, using version 0.2.1:
 
 ```bash
 git clone https://github.com/TBD54566975/dwn-server.git

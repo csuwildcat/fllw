@@ -15,7 +15,7 @@ export class DetailBox extends LitElement {
         overflow: hidden;
       }
 
-      #content {
+      #content:has(slot:not(:empty)) {
         padding: 0 0 2.5em;
       }
 
@@ -82,7 +82,7 @@ export class DetailBox extends LitElement {
 
     this.addEventListener('transitionend', e => {
       if (e.target === this && e.propertyName === 'max-height') {
-        this.style.maxHeight = this.hasAttribute('open') ? 'none' : null;
+        this.style.maxHeight = this.open ? 'none' : null;
       }
     });
 
@@ -95,7 +95,7 @@ export class DetailBox extends LitElement {
     if (this.content.scrollHeight > this.offsetHeight) {
       this.setAttribute('overflow', '')
     }
-    else this.removeAttribute('overflow')
+    else if (!this.open) this.removeAttribute('overflow')
   }
 
   updated(changedProperties) {

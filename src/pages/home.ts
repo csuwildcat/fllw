@@ -62,9 +62,11 @@ export class PageHome extends SpinnerMixin(LitElement) {
 
   updated(){
     if (this.context.did && !this.context.follows) {
-      this.startSpinner();
+      this.startSpinner(null, { renderImmediate: true });
     }
-    else this.stopSpinner();
+    else {
+      this.stopSpinner();
+    }
   }
 
   resolveDid(){
@@ -72,7 +74,7 @@ export class PageHome extends SpinnerMixin(LitElement) {
   }
 
   render() {
-    const showIntro = false;
+    const showIntro = true;
     if (!showIntro && this.context.did) {
       const follows = this.context.follows;
       if (follows?.length) {

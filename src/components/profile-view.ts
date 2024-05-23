@@ -338,6 +338,11 @@ export class ProfileView extends LitElement {
         border-bottom: 2px dotted rgba(255 255 255 / 0.05);
       }
 
+      #stories_list > a:last-child {
+        padding-bottom: 0;
+        border: none;
+      }
+
       #stories_list > a > w5-img {
         --size: clamp(4em, 20vw, 10em);
         margin-right: 1.5em;
@@ -569,12 +574,15 @@ export class ProfileView extends LitElement {
       };
       this.loadingError = false;
       this.loaded = true;
+      DOM.fireEvent(this, 'profile-view-load-success')
     }
     catch(e) {
       this.loadingError = true;
+      DOM.fireEvent(this, 'profile-view-load-error')
     }
     this.loadStories();
     this.loading = false;
+    DOM.fireEvent(this, 'profile-view-load-complete')
   }
 
   async handleFileChange(type, input){

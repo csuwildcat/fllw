@@ -153,7 +153,7 @@ export class PageStory extends LitElement {
         position: sticky;
         box-sizing: border-box;
         width: 100%;
-        min-height: 15em;
+        min-height: 14em;
         max-height: 20em;
         border: 1px solid rgba(255 255 255 / 7%);
         border-radius: var(--hero-border-radius);

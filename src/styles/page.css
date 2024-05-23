@@ -229,6 +229,8 @@ sl-button sl-icon {
 
 [empty-text]:empty::before, [empty-text][empty]::before {
   content: attr(empty-text);
+  display: block;
+  width: 100%;
   font-size: 85%;
   color: rgba(255,255,255,0.5);
   font-style: italic;
