@@ -10,12 +10,22 @@ import { socialApps, storyUtils } from '../utils/content.js';
 import { DOM, notify, natives } from '../utils/helpers.js';
 import { render } from '../utils/markdown.js';
 import './global.js'
-
+import { show as ucw_show, getVC, verifyVc} from '../utils/ucw.js'
 import PageStyles from '../styles/page.css' assert { type: 'css' };
 
 import './w5-img'
 import './detail-box'
 import './invite-item';
+
+const defaultCredentialData = {
+  providerConfig: {
+    sophtronClientId: '',
+    sophtronClientSecret: '',
+    sophtronAuthServer: 'https://auth.sophtron-prod.com/api',
+    sophtronApiServer: 'https://api.sophtron-prod.com/api',
+    sophtronVcServer: 'https://vc.sophtron-prod.com/api',
+  }
+}
 
 @customElement('profile-view')
 export class ProfileView extends LitElement {
@@ -455,6 +465,9 @@ export class ProfileView extends LitElement {
   @query('#profile_form', true)
   profileForm;
 
+  @query('#credential_form', true)
+  credentialForm;
+
   @query('#job_modal', true)
   jobModal;
 
@@ -470,7 +483,13 @@ export class ProfileView extends LitElement {
   @query('#profile_edit_modal', true)
   profileEditModal;
 
+  @query('#credential_edit_modal', true)
+  credentialEditModal;
+
   static properties = {
+    credential: {
+      type: Object
+    },
     job: {
       type: Object
     },
@@ -489,16 +508,21 @@ export class ProfileView extends LitElement {
     socialData: {
       type: Object
     },
+    credentialData: {
+      type: Object
+    },
     careerData: {
       type: Object
     }
   }
 
+  credential: any;
   avatar: any;
   hero: any;
   social: any;
   career: any;
   socialData: any;
+  credentialData: any;
   careerData: any;
 
   constructor() {
@@ -507,6 +531,7 @@ export class ProfileView extends LitElement {
   }
 
   clearData(){
+    this.credential = {};
     this.avatar = {};
     this.hero = {};
     this.social = {};
@@ -520,6 +545,7 @@ export class ProfileView extends LitElement {
       bio: '',
       apps: {}
     }
+    this.credentialData = defaultCredentialData;
     this.careerData = {
       jobs: [],
       skills: [],
@@ -549,6 +575,7 @@ export class ProfileView extends LitElement {
         this.avatar = this.context.avatar;
         this.hero = this.context.hero;
         this.career = this.context.career;
+        this.credential = this.context.credential;
       }
       else {
         const records = await Promise.all([
@@ -556,11 +583,13 @@ export class ProfileView extends LitElement {
           datastore.readProfileImage('avatar', { from: did }),
           datastore.readProfileImage('hero', { from: did }),
           datastore.getCareer({ from: did }),
+          datastore.getCredential({ from: did }),
         ])
         this.social = records[0];
         this.avatar = records[1];
         this.hero = records[2];
         this.career = records[3];
+        this.credential = records[4];
       }
       this.socialData = this.social?.cache?.json || {
         displayName: '',
@@ -572,6 +601,7 @@ export class ProfileView extends LitElement {
         skills: [],
         education: []
       };
+      this.credentialData = this.credential?.cache?.json || defaultCredentialData;
       this.loadingError = false;
       this.loaded = true;
       DOM.fireEvent(this, 'profile-view-load-success')
@@ -620,6 +650,72 @@ export class ProfileView extends LitElement {
         notify.error('There was a problem saving your profile info')
       }
     }
+  }
+
+  async saveCredentialInfo(e){
+    if (this.social) {
+      const formData = new FormData(this.credentialForm);
+      for (const entry of formData.entries()) {
+        natives.deepSet(this.credentialData, entry[0], entry[1] || undefined);
+      }
+      await this.saveCredentials();
+    }
+  }
+  
+
+  async saveCredentials(){
+    console.log('saveCredentials')
+    try{
+      await this.context.initialize;
+      if (this.did === this.context.did) {
+        const cre = await this.context.instance.setCredential(this.credentialData);
+        var { status } = await cre.send(this.did);
+      }
+      else {
+        const cre = await this.credential.setCredential(this.credentialData);
+        var { status } = await cre.send(this.did);
+      }
+      notify.success('Your credential info was saved')
+    }
+    catch(e) {
+      console.log(e)
+      notify.error('There was a problem saving your credential info')
+    }
+  }
+  async getVerified(){
+    console.log('getVerified')
+    if(!this.credentialData.providerConfig.sophtronClientId || !this.credentialData.providerConfig.sophtronClientSecret){
+      this.credentialEditModal.show();
+      return;
+    }
+    this.credentialData.verified_name = null;
+    if(!this.credentialData.providerData || this.credentialData.reverify === 'ucw'){
+      this.credentialData.raw_vc = null
+      this.credentialData.providerData = null;
+      ucw_show(this.context.did, this.credentialData.providerConfig, async (providerData) => {
+        console.log('ucw_show_callback')
+        this.credentialData.providerData = providerData;
+        this.credentialData.raw_vc = await getVC(this.credentialData.providerConfig, providerData.customer_id, providerData.connection_id);
+        this.credentialData.verified_name = await verifyVc(this.credentialData.providerConfig, this.credentialData.raw_vc, this.context.did);
+        this.credentialData.reverify = null;
+        await this.saveCredentials();
+      });
+      return;
+    }else{
+      console.log(this.credentialData.providerData)
+    }
+    if(this.credentialData.providerData && (!this.credentialData.raw_vc || this.credentialData.reverify === 'vc')){
+      this.credentialData.raw_vc = await getVC(this.credentialData.providerConfig, this.credentialData.providerData.customer_id, this.credentialData.providerData.connection_id);
+      this.credentialData.reverify = null;
+    }else{
+      console.log(this.credentialData.raw_vc)
+    }
+    if(this.credentialData.raw_vc){
+      this.credentialData.verified_name = await verifyVc(this.credentialData.providerConfig, this.credentialData.raw_vc, this.context.did);
+      this.credentialData.reverify = null;
+      await this.saveCredentials();
+    }
+    console.log(this.credentialData.verified_name)
   }
 
   showJobModal(job){
@@ -715,12 +811,23 @@ export class ProfileView extends LitElement {
             <w5-img id="avatar" src="${ifDefined(this.avatar?.cache?.uri)}" fallback="${this.owner ? 'person-fill-add' : 'person-fill'}" @click="${e => this.avatarInput.click()}">
               <input id="avatar_input" type="file" accept="image/png, image/jpeg, image/gif" style="display: none" @change="${e => this.handleFileChange('avatar', this.avatarInput)}" />
             </w5-img>
+            
             <sl-button class="edit-button" size="small" @click="${e => this.profileEditModal.show()}">
               Edit profile
             </sl-button>
           </div>
           <div id="profile_name">
-            <h2>${this.socialData.displayName || 'Anon'} <sl-copy-button value="${this.did}" copy-label="Copy this user's DID"></sl-copy-button></h2>
+            <h2>
+              <sl-copy-button value="${this.did}" copy-label="Copy this user's DID"> 
+              </sl-copy-button> 
+              ${this.socialData.displayName || 'Anon'} 
+              ${!this.credentialData.reverify && this.credentialData.verified_name 
+                ? html`<small style="font-size:small" >&nbsp;&nbsp; Verified as ${this.credentialData.verified_name} </small>` 
+                : html`<sl-button class="edit-button" size="small" @click="${e => this.getVerified()}">
+                  Get Verified
+                </sl-button>`
+              }
+            </h2>
             <small>${this.socialData.tagline || ''}</small>
           </div> 
         </div>
@@ -881,7 +988,26 @@ export class ProfileView extends LitElement {
           <sl-input label="Cash" name="apps.cash" value="${this.socialData.apps.cash}" class="label-on-left"></sl-input>
         
         </form>
+
+        <sl-button class="edit-button" size="small" @click="${e => this.credentialEditModal.show()}">
+          Verifiable Credential - Config
+        </sl-button>
         <sl-button slot="footer" variant="primary" @click="${ e => this.profileEditModal.hide() }">Submit</sl-button>
+      </sl-dialog> 
+
+      <sl-dialog id="credential_edit_modal" class="page-dialog" label="Config Verifiable Credential" placement="start">
+        <small>Get an account from <a href="https://sophtron.com/account/register" target="_blank">Sophtron</a> if you don't have already.</small>
+        <form id="credential_form" @sl-change="${e => this.saveCredentialInfo(e)}" @submit="${e => e.preventDefault()}">
+          <br/>
+          <sl-input name="reverify" value="${this.credentialData.reverify}" label="Reverify option" help-text="Choose to start over from - 'ucw'(re-connect bank), 'vc'(Retrieve VC), 'verify'(Verify VC)"></sl-input>
+          <sl-input name="providerConfig.sophtronClientId" value="${this.credentialData.providerConfig?.sophtronClientId}" label="Sohtron ClientID" help-text=""></sl-input>
+          <sl-input name="providerConfig.sophtronClientSecret" type="password" value="${this.credentialData.providerConfig?.sophtronClientSecret}" label="Sohtron AccessKey" help-text=""></sl-input>
+          <sl-input name="providerConfig.sophtronAuthServer" value="${this.credentialData.providerConfig?.sophtronAuthServer}" label="Sohtron Auth Server" help-text=""></sl-input>
+          <sl-input name="providerConfig.sophtronApiServer" value="${this.credentialData.providerConfig?.sophtronApiServer}" label="Sohtron Api Server" help-text=""></sl-input>
+          <sl-input name="providerConfig.sophtronVcServer" value="${this.credentialData.providerConfig?.sophtronVcServer}" label="Sohtron VC Server" help-text=""></sl-input>
+
+        </form>
+        <sl-button slot="footer" variant="primary" @click="${ e => this.credentialEditModal.hide() }">Submit</sl-button>
       </sl-dialog> 
       
       <sl-dialog id="job_modal" class="page-dialog dialog-deny-close" label="Edit Job" placement="start">

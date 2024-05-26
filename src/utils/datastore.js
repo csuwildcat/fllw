@@ -278,6 +278,31 @@ class Datastore {
     return latestRecord;
   }
 
+  async createCredential(options = {}) {
+    const { record, status } = await this.createProtocolRecord('profile', 'credential', {
+      published: true,
+      data: options.data,
+      dataFormat: 'application/json'
+    })
+    if (options.cache !== false) await cacheJson(record)
+    return record;
+  }
+
+  async getCredential(options = {}) {
+    await this.ready;
+    const did = options.from || this.did;
+    if (did !== this.did) {
+      const cached = Datastore.getCache(did, 'credential');
+      if (cached) return cached;
+    }
+    const { records, status } = await this.queryProtocolRecords('profile', 'credential', options)
+    const latestRecord = records[0];
+    if (!latestRecord) return;
+    if (options.cache !== false) await cacheJson(latestRecord)
+    Datastore.setCache(did, 'credential', latestRecord);
+    return latestRecord;
+  }
+
   async createStory(options = {}) {
     const { record, status } = await this.createProtocolRecord('social', 'story', {
       published: false,
