@@ -288,6 +288,14 @@ class Datastore {
     return record;
   }
 
+  async deleteStory(recordId) {
+    const response = await web5.dwn.records.delete({
+      message: { recordId },
+    });
+    if (response.status > 399) throw 'Delete failed';
+    return response;
+  }
+
   async readStory(id, options = {}) {
     const { record, status } = await this.readProtocolRecord(id, options)
     if (status.code > 399) {
@@ -391,6 +399,23 @@ class Datastore {
   // }
 
   queryFollows = (options = {}) => this.queryProtocolRecords('social', 'follow', options)
+
+  async getFollows(items = [], cursor){
+    const options = {
+      from: this.did,
+      pagination: {
+        limit: 10,
+      }
+    };
+    if (cursor) {
+      options.pagination.cursor = cursor;
+    }
+    var { cursor, records } = await this.queryProtocolRecords('social', 'follow', options)
+    if (records.length) {
+      items.concat(records);
+    }
+    return { items, cursor }
+  }
 
   async toggleFollow(did, follow){
     var record = await datastore.queryFollows({ recipient: did, latestRecord: true })

@@ -18,7 +18,7 @@ const socialDefinition = {
     "aggregators": {
       "dataFormats": ["application/json"]
     },
-    "follows": {
+    "follow": {
       "dataFormats": ["application/json"]
     },
     "story": {
@@ -39,7 +39,9 @@ const socialDefinition = {
   },
   structure: {
     aggregators: {},
-    follows: {},
+    follow: {
+      $role: true
+    },
     story: {
       media: {
         $actions: [

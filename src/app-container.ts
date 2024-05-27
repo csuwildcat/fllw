@@ -28,6 +28,7 @@ import './pages/follows.js';
 import './pages/settings.js';
 import './pages/profile.js';
 import './pages/story.js';
+import './pages/stories.js';
 
 // const BASE_URL: string = (import.meta.env.BASE_URL).length > 2 ? (import.meta.env.BASE_URL).slice(1, -1) : (import.meta.env.BASE_URL);
 
@@ -494,7 +495,7 @@ export class AppContainer extends AppContextMixin(SpinnerMixin(LitElement)) {
         },
         {
           path: '/profiles/:did?/stories',
-          component: '#story'
+          component: '#stories'
         },
         {
           path: '/profiles/:did/stories/:story?',
@@ -517,8 +518,7 @@ export class AppContainer extends AppContextMixin(SpinnerMixin(LitElement)) {
   #initialization: Promise<void> | null = null;
 
   async #initialize(){
-    if (this.#initialization) return this.#initialization;
-    return this.#initialization = new Promise(async resolve => {
+    return this.#initialization = this.#initialization || new Promise(async resolve => {
       this.startSpinner(null, { minimum: 0, renderImmediate: true });
       if (localStorage.connected) {
         await this.loadProfile(localStorage.did);
@@ -526,8 +526,8 @@ export class AppContainer extends AppContextMixin(SpinnerMixin(LitElement)) {
       else {
         // await this.getIdentity() 
       }
-      resolve();
       this.initialized = true;
+      resolve();
       await DOM.skipFrame();
       this.stopSpinner()
     });
@@ -612,7 +612,8 @@ export class AppContainer extends AppContextMixin(SpinnerMixin(LitElement)) {
 
       <main>
         <page-home id="home" scroll></page-home>
-        <page-directory id="directory" scroll></page-directory>     
+        <page-directory id="directory" scroll></page-directory>
+        <page-stories id="stories" scroll></page-stories>   
         <page-story id="story" scroll></page-story>
         <page-follows id="follows" scroll></page-follows>
         <page-settings id="settings" scroll></page-settings>

@@ -343,6 +343,7 @@ export class PageStory extends LitElement {
       if (path.story && path.story !== 'new') {
         try {
           this.story = await datastore.readStory(path.story, this.owner ? {} : { from: this.did });
+          console.log(this.story);
         }
         catch(e){
           if (e.code === 401) {

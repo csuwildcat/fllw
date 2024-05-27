@@ -15,6 +15,7 @@ import PageStyles from '../styles/page.css' assert { type: 'css' };
 
 import './w5-img'
 import './detail-box'
+import './story-list';
 import './invite-item';
 
 @customElement('profile-view')
@@ -322,64 +323,20 @@ export class ProfileView extends LitElement {
         white-space: pre-wrap;
       }
 
-      /* STORIES */
+      /* Stories */
 
-      #stories_list:has(a) ~ [default-content~="placeholder"]{
+      story-list[has-content] ~ [default-content="placeholder"] {
         display: none;
       }
 
-      #stories_list > a {
-        display: flex;
-        max-height: 11em;
-        margin: 0em 0 1.25em;
-        padding: 0.75em 0.8em 1.25em;
-        text-decoration: none;
-        color: inherit;
-        border-bottom: 2px dotted rgba(255 255 255 / 0.05);
+      story-list > sl-button {
+        display: none;
+        align-self: center;
+        margin: 1em 0 0;
       }
 
-      #stories_list > a:last-child {
-        padding-bottom: 0;
-        border: none;
-      }
-
-      #stories_list > a > w5-img {
-        --size: clamp(4em, 20vw, 10em);
-        margin-right: 1.5em;
-        border-radius: 0.4em;
-      }
-
-      #stories_list .markdown-body {
-        position: relative;
-        font-size: 0.85em;
-        overflow: hidden;
-      }
-
-      #stories_list .markdown-body h1 {
-        font-size: 1.75em;
-      }
-
-      #stories_list .markdown-body h2 {
-        font-size: 1.6em;
-      }
-
-      #stories_list .markdown-body h3 {
-        font-size: 1.45em;
-      }
-
-      #stories_list .markdown-body:after {
-        content: "";
-        display: block;
-        position: absolute;
-        bottom: 0;
-        width: 100%;
-        padding: 2em 0 0.8em;
-        text-align: center;
-        background: linear-gradient(transparent, var(--grey) 90%);
-      }
-
-      #stories_list a .markdown-body > :first-child {
-        margin-top: 0;
+      story-list[more-content] > sl-button {
+        display: inline-block;
       }
 
       .label-on-left {
@@ -409,19 +366,6 @@ export class ProfileView extends LitElement {
       @media(max-width: 500px) {
         #hero::after {
           display: none;
-        }
-
-        #stories_list > a {
-          flex-direction: column;
-          height: auto;
-          max-height: 20em;
-          padding: 0.75em 0 1.25em;
-        }
-
-        #stories_list > a > w5-img {
-          --size: 100%;
-          max-height: 10em;
-          margin: 0 0 1em;
         }
       }
 
@@ -474,12 +418,6 @@ export class ProfileView extends LitElement {
     job: {
       type: Object
     },
-    stories: {
-      type: Array
-    },
-    threads: {
-      type: Array
-    },
     avatar: {
       type: Object
     },
@@ -510,11 +448,7 @@ export class ProfileView extends LitElement {
     this.avatar = {};
     this.hero = {};
     this.social = {};
-    this.career = {};
-    this.stories = [];
-    this.storiesCursor = null;
-    this.threads = [];
-    this.threadsCursor = null;
+    this.career = {}; null;
     this.socialData = {
       displayName: '',
       bio: '',
@@ -580,7 +514,6 @@ export class ProfileView extends LitElement {
       this.loadingError = true;
       DOM.fireEvent(this, 'profile-view-load-error')
     }
-    this.loadStories();
     this.loading = false;
     DOM.fireEvent(this, 'profile-view-load-complete')
   }
@@ -660,28 +593,10 @@ export class ProfileView extends LitElement {
     }
   }
 
-  async loadStories(){
-    const options = {
-      from: this.did,
-      pagination: {
-        limit: 10,
-      }
-    };
-    if (this.storiesCursor) {
-      options.pagination.cursor = this.storiesCursor;
-    }
-    const { cursor, records } = await datastore.queryStories(options)
-    this.storiesCursor = cursor;
-    if (records.length) {
-      this.stories = this.stories.concat(records);
-    }
-    this.storiesLoaded = true;
-  }
-
   onTabShow(e){
     this.panel = e.detail.name;
     if (this.panel === 'stories' && !this.storiesLoaded) {
-      this.loadStories();
+      //this.loadStories();
     }
   }
 
@@ -808,21 +723,9 @@ export class ProfileView extends LitElement {
         </sl-tab-panel>
 
         <sl-tab-panel id="stories_panel" name="stories" ?active="${this.panel === 'stories' || nothing}">
-          <div id="stories_list">
-            ${
-              this?.stories?.map(story => {
-                const data = story.cache.json;
-                const node = render(data.markdown || '');
-                Array.from(node.children).slice(3).forEach(child => child.remove())
-                return html`
-                  <a href="profiles/${story.author}/stories/${story.id}" flex>
-                    <!-- <h3>${storyUtils.getTitle(story.cache.json.markdown)}</h3> -->
-                    <w5-img src="https://dweb/${story.author}/records/${data.hero}"></w5-img>
-                    ${node}
-                  </a>
-              `})
-            }
-          </div>
+          <story-list did="${this.did}">
+            <sl-button href="/profiles/${this.did}/stories" slot="content-end">View all stories</sl-button>
+          </story-list>
           <div default-content="placeholder">
             ${ this.owner ? html`
               <sl-icon name="file-earmark-richtext"></sl-icon>

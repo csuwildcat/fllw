@@ -11,7 +11,6 @@ const initialState = {
   hero: null,
   social: null,
   career: null,
-  follows: null,
 };
 
 async function importLatestRecords(did, current, latest){
@@ -40,7 +39,6 @@ export const AppContextMixin = (BaseClass) => class extends BaseClass {
       hero: null,
       social: null,
       career: null,
-      follows: null,
     }
   }
 
@@ -78,7 +76,7 @@ export const AppContextMixin = (BaseClass) => class extends BaseClass {
         jobs: [],
         skills: [],
         education: [],
-      }, from: did }),
+      }, from: did })
     ])
     this.updateState({
       did,
@@ -86,18 +84,9 @@ export const AppContextMixin = (BaseClass) => class extends BaseClass {
       avatar: records[0],
       hero: records[1],
       social: records[2],
-      career: records[3]
+      career: records[3],
     });
     return did;
-  }
-
-  async loadFollows(force){
-    await this.initialize;
-    if (!this.context.follows || force) {
-      const { records } = await datastore.queryFollows();
-      this.updateState({ follows: records });
-    }
-    return this.context.follows;
   }
 
   async setProfileImage(type, file){

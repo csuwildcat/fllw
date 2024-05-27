@@ -13,11 +13,12 @@ import config from '../config.json' assert { type: 'json' };
 export class PageHome extends SpinnerMixin(LitElement) {
 
   @consume({context: AppContext, subscribe: true})
+  @property({ type: Object })
   context;
 
-  constructor() {
-    super();
-  }
+  #did = null;
+  #cursor = null;
+  follows = [];
 
   static styles = [
     PageStyles,
@@ -56,29 +57,34 @@ export class PageHome extends SpinnerMixin(LitElement) {
   //   console.log(follows.entries);
   // }
 
-  firstUpdated(){
-    this.context.instance.loadFollows().then(follows => this.requestUpdate());
+  async updated(props){
+    if (props.has('context')) {
+      if (this.context.did) {
+        if (this.#did !== this.context.did) {
+          this.#did = this.context.did;
+          this.startSpinner(null, { renderImmediate: true });
+          console.log(123);
+          await this.getFollows();
+          this.stopSpinner();
+        }
+      }
+      else {
+        
+      }
+    }
   }
 
-  updated(){
-    if (this.context.did && !this.context.follows) {
-      this.startSpinner(null, { renderImmediate: true });
-    }
-    else {
-      this.stopSpinner();
-    }
-  }
-
-  resolveDid(){
-
+  async getFollows(){
+    const { items, cursor } = await datastore.getFollows(this.follows, this.#cursor)
+    this.follows = items;
+    this.#cursor = cursor;
   }
 
   render() {
-    const showIntro = true;
-    if (!showIntro && this.context.did) {
-      const follows = this.context.follows;
-      if (follows?.length) {
-        return this.context.follows.map(follow => {
+    const forceIntro = true;
+    if (!forceIntro && this.context.did) {  
+      if (this.follows?.length) {
+        return this.follows.map(follow => {
           return html`${follow.recipient}`
         })
       }

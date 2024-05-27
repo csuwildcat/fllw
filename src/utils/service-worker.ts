@@ -8,18 +8,18 @@ const trailingSlashRegex = /\/$/;
 self.addEventListener('fetch', event => {
   const match = event.request.url.match(didUrlRegex);
   if (match) {
-    event.respondWith((async () => {
-      const normalizedUrl = event.request.url.replace(httpToHttpsRegex, 'https:').replace(trailingSlashRegex, '');
-      const cachedResponse = await caches.open('drl').then(cache => cache.match(normalizedUrl));
-      return cachedResponse || handleEvent(event, match[2], match[1]);
-    })());
+    event.respondWith(handleEvent(event, match[2], match[1]));
   }
 });
 
 async function handleEvent(event, did, route){
+  const url = event.request.url.replace(httpToHttpsRegex, 'https:').replace(trailingSlashRegex, '');
+  const responseCache = await caches.open('drl');
+  const response = responseCache.match(url);
+  if (response && !navigator.onLine) return response;
   try {
     const result = await DidResolver.resolve(did);
-    return await fetchResource(event, result.didDocument, route);
+    return await fetchResource(event, result.didDocument, route, responseCache);
   }
   catch(error){
     if (error instanceof Response) {
@@ -30,7 +30,7 @@ async function handleEvent(event, did, route){
   }
 }
 
-async function fetchResource(event, ddo, route) {
+async function fetchResource(event, ddo, route, responseCache) {
   let endpoints = ddo?.service?.find(service => service.type === 'DecentralizedWebNode')?.serviceEndpoint;
       endpoints = (Array.isArray(endpoints) ? endpoints : [endpoints]).filter(url => url.startsWith('http'));
   if (!endpoints?.length) {
@@ -39,8 +39,10 @@ async function fetchResource(event, ddo, route) {
 
   for (const endpoint of endpoints) {
     try {
-      const response = await fetch(`${endpoint.replace(trailingSlashRegex, '')}/${route}`, { headers: event.request.headers });
-      if (response.ok) {
+      const url = `${endpoint.replace(trailingSlashRegex, '')}/${route}`;
+      const response = await fetch(url, { headers: event.request.headers });
+      if (response.ok) { 
+        cacheResponse(url, response, responseCache);
         return response;
       }
       console.log(`DWN endpoint error: ${response.status}`);
@@ -51,4 +53,12 @@ async function fetchResource(event, ddo, route) {
       return new Response('DWeb Node request failed: ' + error, { status: 500 }) 
     }
   }
+}
+
+async function cacheResponse(url, response, cache){   
+  const clonedResponse = response.clone();
+  const headers = new Headers(clonedResponse.headers);
+        headers.append('x-dwn-cache-time', Date.now().toString());
+  const modifiedResponse = new Response(clonedResponse.body, { headers });
+  cache.put(url, modifiedResponse);
 }
