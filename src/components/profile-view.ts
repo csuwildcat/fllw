@@ -1002,9 +1002,9 @@ export class ProfileView extends LitElement {
           <sl-input name="reverify" value="${this.credentialData.reverify}" label="Reverify option" help-text="Choose to start over from - 'ucw'(re-connect bank), 'vc'(Retrieve VC), 'verify'(Verify VC)"></sl-input>
           <sl-input name="providerConfig.sophtronClientId" value="${this.credentialData.providerConfig?.sophtronClientId}" label="Sohtron ClientID" help-text=""></sl-input>
           <sl-input name="providerConfig.sophtronClientSecret" type="password" value="${this.credentialData.providerConfig?.sophtronClientSecret}" label="Sohtron AccessKey" help-text=""></sl-input>
-          <sl-input name="providerConfig.sophtronAuthServer" value="${this.credentialData.providerConfig?.sophtronAuthServer}" label="Sohtron Auth Server" help-text=""></sl-input>
-          <sl-input name="providerConfig.sophtronApiServer" value="${this.credentialData.providerConfig?.sophtronApiServer}" label="Sohtron Api Server" help-text=""></sl-input>
-          <sl-input name="providerConfig.sophtronVcServer" value="${this.credentialData.providerConfig?.sophtronVcServer}" label="Sohtron VC Server" help-text=""></sl-input>
+          <sl-input name="providerConfig.sophtronAuthServer" value="${this.credentialData.providerConfig?.sophtronAuthServer || defaultCredentialData.providerConfig.sophtronAuthServer}" label="Sohtron Auth Server" help-text=""></sl-input>
+          <sl-input name="providerConfig.sophtronApiServer" value="${this.credentialData.providerConfig?.sophtronApiServer || defaultCredentialData.providerConfig.sophtronApiServer}" label="Sohtron Api Server" help-text=""></sl-input>
+          <sl-input name="providerConfig.sophtronVcServer" value="${this.credentialData.providerConfig?.sophtronVcServer || defaultCredentialData.providerConfig.sophtronVcServer}" label="Sohtron VC Server" help-text=""></sl-input>
 
         </form>
         <sl-button slot="footer" variant="primary" @click="${ e => this.credentialEditModal.hide() }">Submit</sl-button>

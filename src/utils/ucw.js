@@ -32,19 +32,19 @@ async function getSophtronAuthCode(){
   const uuid = CryptoJS.enc.Utf8.stringify(CryptoJS.enc.Base64.parse(sophtronConfig.sophtronClientSecret))
   const key = CryptoJS.enc.Hex.stringify(CryptoJS.enc.Utf8.parse(uuid.replaceAll('-', '')));
   const iv = CryptoJS.enc.Hex.stringify(CryptoJS.lib.WordArray.random(16));
-  const payload = encrypt(JSON.stringify({
+  const provider = {
     sophtron: {
       clientId: sophtronConfig.sophtronClientId,
       secret: sophtronConfig.sophtronClientSecret,
-      endpoint: sophtronConfig.sophtronApiServer,
-      vcEndpoint: sophtronConfig.sophtronVcServer,
+      endpoint: sophtronConfig.sophtronApiServer || 'https://api.sophtron-prod.com/api',
+      vcEndpoint: sophtronConfig.sophtronVcServer || 'https://vc.sophtron-prod.com/api',
       provider: 'sophtron',
       available: true
     }
-  }), key, iv);
-  console.log('encrypted:', payload)
+  }
+  const payload = encrypt(JSON.stringify(provider), key, iv);
   const phrase = buildSophtronAuthCode('post', 'secretexchange' )
-  const rawResponse = await fetch(sophtronConfig.sophtronAuthServer + '/v2/secretexchange', {
+  const rawResponse = await fetch( (sophtronConfig.sophtronAuthServer || 'https://auth.sophtron-prod.com/api') + '/v2/secretexchange', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -62,7 +62,7 @@ async function getSophtronAuthCode(){
 
 export async function getVC(providerConfig, customer_id, connection_id) {
   sophtronConfig = providerConfig;
-  const path = (sophtronConfig?.sophtronVcServer) + `/vc/customers/${customer_id}/members/${connection_id}/identity?filters=name`
+  const path = (sophtronConfig?.sophtronVcServer || 'https://vc.sophtron-prod.com/api') + `/vc/customers/${customer_id}/members/${connection_id}/identity?filters=name`
   const ret = await fetch(path, {
     method: 'GET',
     headers: {
