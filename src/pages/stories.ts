@@ -15,7 +15,9 @@ export class PageStories extends LitElement {
   static styles = [
     PageStyles,
     css`
-      
+      story-list:not([more-content]) > sl-button {
+        display: none;
+      }
     `
   ]
 
@@ -28,6 +30,9 @@ export class PageStories extends LitElement {
   @property({ type: Boolean, reflect: true })
   owner;
 
+  @query('#story_list', true)
+  stortList;
+
   async onRouteEnter(route, path){
     const params = DOM.getQueryParams();
     await this.context.instance.initialize;
@@ -35,6 +40,10 @@ export class PageStories extends LitElement {
   }
 
   render() {
-    return html`<story-list did="${this.did}"></story-list>`
+    return html`
+      <story-list did="${this.did}">
+        <sl-button slot="content-end" @click="${ e => this.storyList.getStories() }">Load More</sl-button>
+      </story-list>
+    `
   }
 }

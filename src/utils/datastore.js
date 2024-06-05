@@ -28,7 +28,6 @@ class Datastore {
   }
 
   async installProtocols(){
-    console.log(protocols.social);
     const response = await this.dwn.protocols.query({
       message: {
         filter: {

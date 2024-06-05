@@ -96,7 +96,7 @@ export class PageDirectory extends SpinnerMixin(LitElement) {
       router.navigateTo(`/profiles/${did}`);
     }
     else {
-      this.startSpinner(null, { minimum: 1000 });
+      this.startSpinner(null, { minimum: 2000 });
       this.profileView.did = did
     }
   }

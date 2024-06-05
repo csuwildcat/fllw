@@ -63,7 +63,6 @@ export class PageHome extends SpinnerMixin(LitElement) {
         if (this.#did !== this.context.did) {
           this.#did = this.context.did;
           this.startSpinner(null, { renderImmediate: true });
-          console.log(123);
           await this.getFollows();
           this.stopSpinner();
         }
