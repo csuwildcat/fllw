@@ -134,8 +134,7 @@ class Datastore {
   }
 
   async createProtocolRecord(protocol, path, options = {}){
-    console.log(arguments);
-    await this.ready;;
+    await this.ready;
     const params = {
       message: {
         protocol: protocols[protocol].uri,
@@ -148,11 +147,13 @@ class Datastore {
     if (options.store === false) params.store = options.store;
     if (options.parentContextId) params.message.parentContextId = options.parentContextId;
     if (options.contextId) params.message.contextId = options.contextId;
-    if (options.data) params.data = options.data;
+    
+    params.message.dataFormat = options.dataFormat || 'application/json';
+    if (typeof options.data !== 'undefined') params.data = options.data;
     else if (options.dataFormat === 'application/json') {
       params.data = {};
     }
-    if (options.dataFormat) params.message.dataFormat = options.dataFormat;
+    
     if (options.published !== undefined) params.message.published = options.published;
     if (options.recipient) params.message.recipient = options.recipient;
     if (options.role) params.message.protocolRole = options.role;
@@ -417,20 +418,22 @@ class Datastore {
   }
 
   async toggleFollow(did, follow){
-    var record = await datastore.queryFollows({ recipient: did, latestRecord: true })
+    var {records, status} = await datastore.queryFollows({ recipient: did })
+    console.log(records);
+    var record = records[0];
     if (!record) {
-      var { record } = await datastore.createProtocolRecord('social', 'follow', { recipient: did, dataFormat: 'application/json' })
-      return record;
+      var { record } = await datastore.createProtocolRecord('social', 'follow', { recipient: did })
     }
     else if (record?.isDeleted) {
       record.update();
     }
     else if (!follow) {
-      var { record } = await this.dwn.records.delete({
+      var { status } = await this.dwn.records.delete({
         message: {
           recordId: record.id,
         }
       });
+      return false;
     }
     return record;
   }

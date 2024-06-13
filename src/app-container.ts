@@ -8,8 +8,7 @@ import { setAnimation } from '@shoelace-style/shoelace/dist/utilities/animation-
 import { AppRouter } from './components/router';
 import * as protocols from './utils/protocols';
 
-import { UniversalResolver, DidDht, DidWeb } from '@web5/dids';
-const DidResolver = globalThis.DidResolver = new UniversalResolver({ didResolvers: [DidDht, DidWeb] });
+import { activateFeatures } from './utils/web-features.js';
 
 import './styles/global.css';
 import './components/global.js';
@@ -31,6 +30,10 @@ import './pages/story.js';
 import './pages/stories.js';
 
 // const BASE_URL: string = (import.meta.env.BASE_URL).length > 2 ? (import.meta.env.BASE_URL).slice(1, -1) : (import.meta.env.BASE_URL);
+
+activateFeatures({
+  links: true
+})
 
 const rootElement = document.documentElement;
 const rootStyles = rootElement.style;

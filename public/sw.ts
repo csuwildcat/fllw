@@ -1,5 +1,5 @@
 
-import { installWorker } from '/src/utils/service-worker.ts';
+import { installWorker } from '/src/utils/web-features.ts';
 
 installWorker({
   onCacheCheck(event, route){

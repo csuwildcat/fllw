@@ -62,6 +62,7 @@ export const AppContextMixin = (BaseClass) => class extends BaseClass {
   }
 
   async loadProfile(did){
+    console.log(did);
     did = this.context.did = localStorage.did = await this.getIdentity(did);
     this.context.connected = localStorage.connected = true;
     const records = await Promise.all([

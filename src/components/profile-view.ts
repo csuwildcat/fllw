@@ -112,11 +112,16 @@ export class ProfileView extends LitElement {
       }
 
       #avatar_wrapper {
+        height: 2.75em;
         margin: 0 0 1.1em;
       }
 
       #avatar_wrapper sl-button {
-        margin: 0.75em 0.75em 0 auto;
+        margin: 0.75em 0.75em 0 0;
+      }
+
+      #avatar_wrapper sl-button:first-of-type {
+        margin-left: auto;
       }
 
       #avatar {
@@ -436,6 +441,7 @@ export class ProfileView extends LitElement {
   hero: any;
   social: any;
   career: any;
+  following: any;
   socialData: any;
   careerData: any;
 
@@ -448,7 +454,8 @@ export class ProfileView extends LitElement {
     this.avatar = {};
     this.hero = {};
     this.social = {};
-    this.career = {}; null;
+    this.career = {};
+    this.following = null;
     this.socialData = {
       displayName: '',
       bio: '',
@@ -477,6 +484,7 @@ export class ProfileView extends LitElement {
       await this.context.initialize;
       this.owner = did === this.context.did;
       this.clearData();
+      this.checkFollow();
       this.heroImage.style.setProperty('--deterministic-background', hashToGradient(did.split(':')[2]));
       if (this.owner) {
         this.social = this.context.social;
@@ -485,6 +493,7 @@ export class ProfileView extends LitElement {
         this.career = this.context.career;
       }
       else {
+        
         const records = await Promise.all([
           datastore.getSocial({ from: did }),
           datastore.readProfileImage('avatar', { from: did }),
@@ -516,6 +525,20 @@ export class ProfileView extends LitElement {
     }
     this.loading = false;
     DOM.fireEvent(this, 'profile-view-load-complete')
+  }
+
+  async checkFollow(){
+    const response = await datastore.queryFollows({
+      recipient: this.did
+    })
+    this.following = !!response.records[0];
+    this.requestUpdate();
+  }
+
+  async toggleFollow(){
+    const record = await datastore.toggleFollow(this.did);
+    this.following = !!record;
+    this.requestUpdate();
   }
 
   async handleFileChange(type, input){
@@ -630,9 +653,16 @@ export class ProfileView extends LitElement {
             <w5-img id="avatar" src="${ifDefined(this.avatar?.cache?.uri)}" fallback="${this.owner ? 'person-fill-add' : 'person-fill'}" @click="${e => this.avatarInput.click()}">
               <input id="avatar_input" type="file" accept="image/png, image/jpeg, image/gif" style="display: none" @change="${e => this.handleFileChange('avatar', this.avatarInput)}" />
             </w5-img>
-            <sl-button class="edit-button" size="small" @click="${e => this.profileEditModal.show()}">
-              Edit profile
-            </sl-button>
+            ${ this.owner ? nothing : html`
+              <sl-button id="follow_button" size="small" variant="${ this.following ? 'success' : 'default' }" @click="${ e => this.toggleFollow() }" ?loading="${ this.following === null }">
+                ${ this.following ? 'Following' : 'Follow' }
+              </sl-button>`
+            }
+            ${ !this.owner ? nothing : html`
+              <sl-button class="edit-button" size="small" @click="${e => this.profileEditModal.show()}">
+                Edit profile
+              </sl-button>`
+            }
           </div>
           <div id="profile_name">
             <h2>${this.socialData.displayName || 'Anon'} <sl-copy-button value="${this.did}" copy-label="Copy this user's DID"></sl-copy-button></h2>
