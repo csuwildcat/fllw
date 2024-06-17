@@ -66,7 +66,7 @@ async function fetchResource(event, did, drl, path, responseCache, options) {
       if (response.ok) { 
         const match = await options?.onCacheCheck(event, drl);
         if (match) {
-          cacheResponse(drl, response, responseCache);
+          cacheResponse(drl, url, response, responseCache);
         }
         return response;
       }
@@ -80,17 +80,18 @@ async function fetchResource(event, did, drl, path, responseCache, options) {
   }
 }
 
-async function cacheResponse(drl, response, cache){   
+async function cacheResponse(drl, url, response, cache){   
   const clonedResponse = response.clone();
   const headers = new Headers(clonedResponse.headers);
         headers.append('dwn-cache-time', Date.now().toString());
+        headers.append('dwn-composed-url', url);
   const modifiedResponse = new Response(clonedResponse.body, { headers });
   cache.put(drl, modifiedResponse);
 }
 
 /* Service Worker-based features */
 
-export function installWorker(options: any = {}): void {
+async function installWorker(options: any = {}): Promise<void> {
   const workerSelf = self as any;
   try {
     if (typeof ServiceWorkerGlobalScope !== 'undefined' && workerSelf instanceof ServiceWorkerGlobalScope) {
@@ -109,9 +110,12 @@ export function installWorker(options: any = {}): void {
     else if (globalThis?.navigator?.serviceWorker) {
       // @ts-ignore
       const workerUrl =  globalThis.document ? document?.currentScript?.src : import.meta?.url;
-      navigator.serviceWorker.register(options.path || workerUrl, { type: 'module' }).catch(error => {
-        console.error('DWeb networking feature installation failed: ', error);
-      });
+      const registration = await navigator.serviceWorker.getRegistration('/');
+      if (!registration){
+        navigator.serviceWorker.register(options.path || workerUrl, { type: 'module' }).catch(error => {
+          console.error('DWeb networking feature installation failed: ', error);
+        });
+      }
     }
     else {
       throw new Error('DWeb networking features are not available for install in this environment');
@@ -123,7 +127,6 @@ export function installWorker(options: any = {}): void {
 
 /* DOM Environment Features */
 
-const activeFeatures = {} as any;
 const loaderStyles = `
   .drl-loading-overlay {
     position: fixed;
@@ -262,7 +265,7 @@ const tabContent = `
 `;
 
 let elementsInjected = false;
-function injectElements(options) {
+function injectElements() {
   if (elementsInjected) return;
   const style = document.createElement('style');
   style.innerHTML = `
@@ -301,8 +304,9 @@ function cancelNavigation(){
 }
 
 let activeNavigation;
-function addLinkFeatures(options){
-  if (!activeFeatures.links) {
+let linkFeaturesActive = false;
+function addLinkFeatures(){
+  if (!linkFeaturesActive) {
     document.addEventListener('click', async (event: any) => {
       let anchor = event.target.closest('a');
       if (anchor) {
@@ -324,7 +328,7 @@ function addLinkFeatures(options){
               setTimeout(() => document.documentElement.setAttribute('drl-link-loading', ''), 50);
             }
             const endpoints = await getDwnEndpoints(did)
-            //await new Promise(r => setTimeout(r, 100000));
+            await new Promise(r => setTimeout(r, 4000));
             if (!endpoints.length) throw null;
             let url = `${endpoints[0].replace(trailingSlashRegex, '')}/${did}/${path}`;
             if (openAsTab) {
@@ -343,16 +347,55 @@ function addLinkFeatures(options){
         }
       }
     });
-    activeFeatures.links = true;
+
+    let contextMenuTarget;
+    async function resetContextMenuTarget(e?: any){
+      if (e?.type === 'pointerup') {
+        await new Promise(r => requestAnimationFrame(r));
+      }
+      if (contextMenuTarget) {
+        contextMenuTarget.src = contextMenuTarget.__src__;
+        delete contextMenuTarget.__src__;
+        contextMenuTarget = null;
+      }
+    }
+    document.addEventListener('pointercancel', resetContextMenuTarget);
+    document.addEventListener('pointerdown', async (event: any) => {
+      const target = event.composedPath()[0];
+      if ((event.pointerType === 'mouse' && event.button === 2) ||
+          (event.pointerType === 'touch' && event.isPrimary)) {
+        resetContextMenuTarget();
+        if (target && target?.src?.match(didUrlRegex)) {
+          contextMenuTarget = target;
+          target.__src__ = target.src;
+          const drl = target.src.replace(httpToHttpsRegex, 'https:').replace(trailingSlashRegex, '');
+          const responseCache = await caches.open('drl');
+          const response = await responseCache.match(drl);
+          const url = response.headers.get('dwn-composed-url');
+          if (url) target.src = url;
+          target.addEventListener('pointerup', resetContextMenuTarget, { once: true });
+        }
+      }
+      else if (target === contextMenuTarget) {
+        resetContextMenuTarget();
+      }
+    });
+
+    linkFeaturesActive = true;
   }
 }
 
-export function activateFeatures(options: any = {}){
+export function activatePolyfills(options: any = {}){
+  if (options.serviceWorker !== false) {
+    installWorker(options);
+  }
   if (typeof window !== 'undefined' && typeof window.document !== 'undefined') {
-    if (document.readyState !== 'loading') injectElements(options);
-    else {
-      document.addEventListener('DOMContentLoaded', injectElements, { once: true });
+    if (options.injectStyles !== false) {
+      if (document.readyState !== 'loading') injectElements();
+      else {
+        document.addEventListener('DOMContentLoaded', injectElements, { once: true });
+      }
     }
-    if (options.links || options.allFeatures) addLinkFeatures(options);
+    if (options.links !== false) addLinkFeatures();
   }
 }

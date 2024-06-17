@@ -1,7 +1,7 @@
 
-import { installWorker } from '/src/utils/web-features.ts';
+import { activatePolyfills } from '/src/utils/web-features.ts';
 
-installWorker({
+activatePolyfills({
   onCacheCheck(event, route){
     return {
       ttl: 30000

@@ -8,7 +8,7 @@ import { setAnimation } from '@shoelace-style/shoelace/dist/utilities/animation-
 import { AppRouter } from './components/router';
 import * as protocols from './utils/protocols';
 
-import { activateFeatures } from './utils/web-features.js';
+import { activatePolyfills } from './utils/web-features.js';
 
 import './styles/global.css';
 import './components/global.js';
@@ -31,9 +31,7 @@ import './pages/stories.js';
 
 // const BASE_URL: string = (import.meta.env.BASE_URL).length > 2 ? (import.meta.env.BASE_URL).slice(1, -1) : (import.meta.env.BASE_URL);
 
-activateFeatures({
-  links: true
-})
+activatePolyfills();
 
 const rootElement = document.documentElement;
 const rootStyles = rootElement.style;
