@@ -368,23 +368,17 @@ markdown: `# YOUR TITLE HERE
       }
       const data = this.story?.cache?.json;
       if (data) {
-        this.editor.content = data.markdown;
+        if (this.editor) this.editor.content = data.markdown;
         this.setTitle(data.markdown); 
-        this.renderStory();
-        if (data.hero) {
-          datastore.readStoryMedia(data.hero).then(record => {
-            this.story._hero = record;
-            this.requestUpdate();
-          });
-        }
+        this.renderStory(data.markdown);
       }
       this.deterministicBackground = hashToGradient(this.story.id);
     }
     this._storyLoadResolve();
   }
 
-  renderStory(){
-    this.renderedStory = markdown.render(this?.editor?.content || '')
+  renderStory(content){
+    this.renderedStory = markdown.render(content || this?.editor?.content || '')
   }
 
   switchModes(e){

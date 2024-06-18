@@ -108,11 +108,11 @@ async function installWorker(options: any = {}): Promise<void> {
       });
     }
     else if (globalThis?.navigator?.serviceWorker) {
-      // @ts-ignore
-      const workerUrl =  globalThis.document ? document?.currentScript?.src : import.meta?.url;
       const registration = await navigator.serviceWorker.getRegistration('/');
       if (!registration){
-        navigator.serviceWorker.register(options.path || workerUrl, { type: 'module' }).catch(error => {
+        // @ts-ignore
+        const installUrl =  options.path || (globalThis.document ? document?.currentScript?.src : import.meta?.url);
+        if (installUrl) navigator.serviceWorker.register(installUrl, { type: 'module' }).catch(error => {
           console.error('DWeb networking feature installation failed: ', error);
         });
       }
@@ -348,17 +348,6 @@ function addLinkFeatures(){
       }
     });
 
-    let contextMenuTarget;
-    async function resetContextMenuTarget(e?: any){
-      if (e?.type === 'pointerup') {
-        await new Promise(r => requestAnimationFrame(r));
-      }
-      if (contextMenuTarget) {
-        contextMenuTarget.src = contextMenuTarget.__src__;
-        delete contextMenuTarget.__src__;
-        contextMenuTarget = null;
-      }
-    }
     document.addEventListener('pointercancel', resetContextMenuTarget);
     document.addEventListener('pointerdown', async (event: any) => {
       const target = event.composedPath()[0];
@@ -382,6 +371,18 @@ function addLinkFeatures(){
     });
 
     linkFeaturesActive = true;
+  }
+}
+
+let contextMenuTarget;
+async function resetContextMenuTarget(e?: any){
+  if (e?.type === 'pointerup') {
+    await new Promise(r => requestAnimationFrame(r));
+  }
+  if (contextMenuTarget) {
+    contextMenuTarget.src = contextMenuTarget.__src__;
+    delete contextMenuTarget.__src__;
+    contextMenuTarget = null;
   }
 }
 

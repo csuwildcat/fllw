@@ -43,14 +43,12 @@ class Datastore {
       try {
         await Promise.all(
           Object.values(protocols).map(async _protocol => {
-
             const { protocol } = await this.dwn.protocols.configure({
               message: {
                 definition: _protocol.definition
               }
             })
             const response = await protocol.send(this.did);
-            console.log(response);
           })
         )
         console.log('installed');
@@ -328,7 +326,8 @@ class Datastore {
   }
 
   async readStoryMedia(id, options = {}) {
-    const { record, status } = await this.readProtocolRecord(id, options)
+    const { record, status } = await this.readProtocolRecord(id, options);
+    console.log(id, status, options);
     if (status.code > 399) {
       const error = new Error(status.detail);
             error.code = status.code;
