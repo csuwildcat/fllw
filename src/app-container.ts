@@ -482,14 +482,14 @@ export class AppContainer extends AppContextMixin(SpinnerMixin(LitElement)) {
           component: '#home'
         },
         {
-          path: '/profiles/:did?',
+          path: '/profiles(/):did?',
           component: async (route, path) => {
             await this.initialize;
             if (path.did === this.context.did) {
               return this.profilePage;
             }
             else {
-              this.directoryPage.did = path.did;
+              //this.directoryPage.did = path.did;
               return this.directoryPage;
             }
           }

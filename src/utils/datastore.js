@@ -327,7 +327,6 @@ class Datastore {
 
   async readStoryMedia(id, options = {}) {
     const { record, status } = await this.readProtocolRecord(id, options);
-    console.log(id, status, options);
     if (status.code > 399) {
       const error = new Error(status.detail);
             error.code = status.code;
