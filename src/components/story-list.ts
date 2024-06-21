@@ -5,6 +5,7 @@ import { customElement, query, property } from 'lit/decorators.js';
 import { AppContext } from '../utils/context.js';
 
 import { DOM, notify } from '../utils/helpers.js';
+import { channels } from '../utils/broadcast.js';
 import * as markdown from '../utils/markdown.js';
 import { SpinnerMixin, SpinnerStyles } from '../utils/spinner.js';
 
@@ -55,6 +56,7 @@ export class StoryList extends SpinnerMixin(LitElement) {
   hasContent = true;
 
   firstUpdated(){
+    channels.recordUpdate.subscribe(e => this.updateRecord(e.data.record));
     DOM.addEventDelegate('story-deleted', 'story-item', e => {
       const index = this.items.findIndex(item => item.id === e.detail.id);
       if (index > -1) {
@@ -71,6 +73,7 @@ export class StoryList extends SpinnerMixin(LitElement) {
 
   async load(reset){
     await this.context.initialize;
+    this.isOwnerList = this.did === this.context.did;
     if (reset) {
       this.items = [];
       this.cursor = null; 
@@ -102,13 +105,24 @@ export class StoryList extends SpinnerMixin(LitElement) {
     }
   }
 
+  async updateRecord(obj){
+    console.log(obj);
+    const element = this.renderRoot.querySelector(`#${obj.recordId}`);
+    console.log(element);
+    if (element) {
+      const record = await datastore.readStory(obj.recordId, this.isOwnerList ? {} : { from: this.did });
+      console.log(record);
+      element.record = record;
+    }
+  }
+
   render() {
     return html`
       <slot name="content-start"></slot>
       ${
         this.items.map(record => {
           return html`
-            <story-item .record=${record} ?owner="${this.did === this.context.did}"></story-item>
+            <story-item .record=${record} ?owner="${this.isOwnerList}"></story-item>
           `
         })
       }

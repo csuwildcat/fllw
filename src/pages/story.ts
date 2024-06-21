@@ -6,6 +6,7 @@ import { AppContext } from '../utils/context.js';
 import '../components/global.js'
 import '../components/markdown-editor.js'
 import * as markdown from '../utils/markdown.js';
+import { channels } from '../utils/broadcast.js';
 import { hashToGradient } from '../utils/colors.js';
 import { DOM, notify } from '../utils/helpers.js';
 import PageStyles from '../styles/page.css' assert { type: 'css' };
@@ -332,7 +333,17 @@ export class PageStory extends LitElement {
     }, { once: true })
   }
 
+  async onRouteLeave(route){
+    if (this.storyModified) {
+      await this.#save();
+      channels.recordUpdate.publish({
+        record: this?.story?.toJSON()
+      });
+    }
+  }
+
   async onRouteEnter(route, path){
+    this.storyModified = false;
     const params = DOM.getQueryParams();
     this.panel = params?.mode?.[0];
     await this.context.instance.initialize;
@@ -385,7 +396,7 @@ markdown: `# YOUR TITLE HERE
     const mode = this.panel = e.target.value;
   }
 
-  save = DOM.debounce(async () => {
+  #save = async () => {
     const data = this.story.cache.json;
     data.markdown = this.editor.content;
     const response = await this.story.update({ data });
@@ -393,7 +404,9 @@ markdown: `# YOUR TITLE HERE
     this.story.cache = {
       json: await this.story.data?.json?.()?.catch(e => {})?.then(obj => obj || {})
     }
-  }, 2000)
+  };
+
+  save = DOM.debounce(this.#save, 2000)
 
   #title = 'Untitled';
   setTitle(val){
@@ -471,7 +484,10 @@ markdown: `# YOUR TITLE HERE
           </sl-tab-panel>
           ${ !this.owner ? nothing : html`
             <sl-tab-panel id="edit_panel" name="edit" ?active="${this.panel === 'edit'}">
-              <markdown-editor id="editor" @afterupdate="${e => this.handleDebouncedEditorUpdate(true)}">
+              <markdown-editor id="editor" @afterupdate="${e => {
+                this.storyModified = true;
+                this.handleDebouncedEditorUpdate(true)
+              }}">
                 <w5-img id="edit_hero" class="hero" src="${heroDRL || nothing}" slot="before-content">
                   <sl-icon-button class="edit-button" name="pencil" size="medium" @click="${e => this.heroInput.click()}"></sl-icon-button>
                   <input id="hero_input" type="file" accept="image/png, image/jpeg, image/gif" style="display: none" @change="${e => this.storeMedia(this.heroInput?.files?.[0], true)}" />

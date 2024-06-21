@@ -553,6 +553,19 @@ export class AppContainer extends AppContextMixin(SpinnerMixin(LitElement)) {
     });
   }
 
+  async remoteConnect(){
+    // const response = await Web5.connect({
+    //   remoteDevice: {
+    //     onQrGenerated(str){
+    //       // handle it
+    //     },
+    //     async onPinCapture(){
+    //       return 123456;
+    //     }
+    //   }
+    // })
+  }
+
   async viewMembers(context, path){
     const list = this.viewMembersModal.querySelector('member-list');
     list.context = context;
@@ -633,7 +646,7 @@ export class AppContainer extends AppContextMixin(SpinnerMixin(LitElement)) {
             Create a new identity
           </sl-button>
           <div break-text="OR"></div>
-          <sl-button variant="default" size="large">
+          <sl-button variant="default" size="large" @click="${ e => this.remoteConnect() }">
             <sl-icon slot="prefix" name="person-up"></sl-icon>
             Connect your identity
           </sl-button>
@@ -653,10 +666,6 @@ export class AppContainer extends AppContextMixin(SpinnerMixin(LitElement)) {
       <sl-drawer id="view_members_modal" label="Community Members" placement="start">
         <member-list></member-list>
       </sl-drawer>
-
-      <sl-dialog id="member_profile_modal" label="Member Profile" class="modal-page" @sl-request-close="${e => e.detail.source === 'overlay' && e.preventDefault()}">
-        <profile-view id="member_profile_view"></profile-view>
-      </sl-dialog>
     `;
   }
 }

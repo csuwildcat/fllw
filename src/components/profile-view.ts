@@ -136,7 +136,9 @@ export class ProfileView extends LitElement {
       }
 
       #profile_name {
+        position: relative;
         margin: 0 0 0.5em 0.1em;
+        z-index: 2;
       }
 
       #profile_name h2 {

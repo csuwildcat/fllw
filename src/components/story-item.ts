@@ -114,10 +114,22 @@ export class StoryItem extends LitElement {
     `
   ]
 
-  record = null;
+  @property({ type: String, reflect: true })
+  id;
 
   @property({ type: Boolean })
   owner;
+
+  #record;
+  get record() {
+    return this.#record;
+  }
+  set record(record) {
+    if (!record) return;
+    this.#record = record;
+    this.id = record.id;
+    this.requestUpdate();
+  }
 
   async deleteStory(){
     const response = await datastore.deleteStory(this.record.id);
