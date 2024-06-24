@@ -106,12 +106,9 @@ export class StoryList extends SpinnerMixin(LitElement) {
   }
 
   async updateRecord(obj){
-    console.log(obj);
     const element = this.renderRoot.querySelector(`#${obj.recordId}`);
-    console.log(element);
     if (element) {
       const record = await datastore.readStory(obj.recordId, this.isOwnerList ? {} : { from: this.did });
-      console.log(record);
       element.record = record;
     }
   }
