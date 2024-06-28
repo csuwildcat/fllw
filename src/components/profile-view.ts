@@ -146,8 +146,8 @@ export class ProfileView extends LitElement {
         /* font-size: calc(var(--avatar-size) * 0.2); */
       }
 
-      #profile_name sl-copy-button {
-        font-size: 0.65em;
+      sl-copy-button {
+        font-size: 0.925rem;
         opacity: 0.5;
         transition: opacity 0.3s ease;
       }
@@ -156,11 +156,11 @@ export class ProfileView extends LitElement {
         opacity: 1;
       }
 
-      #did_qr_button {
-        font-size: 71%;
+      .qr_button {
+        font-size: 0.95rem;
       }
 
-      #did_qr_button::part(base) {
+      .qr_button::part(base) {
         padding-left: 0;
         padding-right: 0;
       }
@@ -386,13 +386,27 @@ export class ProfileView extends LitElement {
         height: 27em;
       }
 
-      #did_qr_modal sl-qr-code {
+      #qr_modal::part(title) {
+        padding-right: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      #qr_modal::part(panel) {
+        max-width: 20em;
+      }
+
+      #qr_modal::part(body) {
+        margin: 0 auto;
+      }
+
+      #qr_modal sl-qr-code {
         padding: 1em;
         background: #fff;
         border-radius: 0.25rem;
       }
 
-      #did_qr_modal sl-qr-code::part(base) {  
+      #qr_modal sl-qr-code::part(base) {  
         width: 100% !important;
         max-width: 15rem;
         height: auto !important;
@@ -463,8 +477,11 @@ export class ProfileView extends LitElement {
   @query('#job_form', true)
   jobForm;
 
-  @query('#did_qr_modal', true)
-  didQrModal;
+  @query('#qr_modal', true)
+  qrModal;
+
+  @query('#qr_code', true)
+  qrCode;
 
   @query('#pay_modal', true)
   payModal;
@@ -516,7 +533,7 @@ export class ProfileView extends LitElement {
     },
     ln_address: {
       icon: 'lightning-charge',
-      color: '#7a1af5',
+      color: '#cac55c',
       normalize: (val, link) => {
         return link ? `lightning:${val}` : val;
       }
@@ -529,7 +546,7 @@ export class ProfileView extends LitElement {
       }
     },
     dap: {
-      icon: 'cash-coin',
+      icon: 'dap-white',
       color: '#37b4fc',
       normalize: (val, link) => {
         return link ? null : val.replace(/^(?!\@)/, '@');
@@ -716,6 +733,12 @@ export class ProfileView extends LitElement {
     }
   }
 
+  showQrModal(title, value){
+    this.qrModal.label = title;
+    this.qrCode.value = value;
+    this.qrModal.show();
+  }
+
   render(){
 
     const today = new Date();
@@ -746,7 +769,7 @@ export class ProfileView extends LitElement {
             <w5-img id="avatar" src="${ifDefined(this.avatar?.cache?.uri)}" fallback="${this.owner ? 'person-fill-add' : 'person-fill'}" @click="${e => this.avatarInput.click()}">
               <input id="avatar_input" type="file" accept="image/png, image/jpeg, image/gif" style="display: none" @change="${e => this.handleFileChange('avatar', this.avatarInput)}" />
             </w5-img>
-            ${ !Object.keys(this.socialData?.payment).length ? nothing : html`
+            ${ !Object.keys(this.socialData?.payment || {}).length ? nothing : html`
               <sl-button class="pay-button" size="small" @click="${e => this.payModal.show()}">
                 $ Pay
               </sl-button>`
@@ -767,7 +790,7 @@ export class ProfileView extends LitElement {
               ${this.socialData.displayName || 'Anon'} 
               <sl-copy-button value="${this.did}" copy-label="Copy this user's DID"></sl-copy-button>
               <sl-tooltip content="Scan this user's DID">
-                <sl-icon-button id="did_qr_button" name="simple-qr" size="small" @click="${ e => this.didQrModal.show() }"></sl-icon-button>
+                <sl-icon-button class="qr_button" name="simple-qr" size="small" @click="${ e => this.showQrModal("Scan this user's DID", this.did) }"></sl-icon-button>
               </sl-tooltip>
             </h2>
             <small>${this.socialData.tagline || ''}</small>
@@ -952,15 +975,21 @@ export class ProfileView extends LitElement {
       </sl-dialog>
 
       <sl-dialog id="pay_modal" class="page-dialog" label="Payment" placement="start">
-        ${Object.entries(this.socialData.payment).map(([type, value]) => {
+        ${Object.entries(this.socialData.payment || {}).map(([type, value]) => {
           let format = ProfileView.paymentTypes?.[type];
           if (format) {
+            let normalized = format?.normalize(value) || value;
+            let link = format?.normalize(value, true);
             return html`
               <div class="payment-type" flex>
                 <sl-icon name="${format.icon}" style="color: ${format.color || '#fff'}"></sl-icon>
-                <a href="${format?.normalize(value, true) || nothing}" target="${format.newTab ? '_blank' : nothing}">
-                  ${format?.normalize(value) || value}
+                <a href="${link || nothing}" target="${format.newTab ? '_blank' : nothing}">
+                  ${normalized}
                 </a>
+                <sl-copy-button value="${normalized}" copy-label="Copy"></sl-copy-button>
+                <sl-tooltip content="Show QR">
+                  <sl-icon-button class="qr_button" name="simple-qr" size="small" @click="${ e => this.showQrModal(normalized, link || normalized) }"></sl-icon-button>
+                </sl-tooltip>
               </div>
             `
           }
@@ -968,8 +997,8 @@ export class ProfileView extends LitElement {
         })}
       </sl-dialog>
 
-      <sl-dialog id="did_qr_modal" class="page-dialog" label="Scan this user's DID" placement="start" fit-content>
-        <sl-qr-code value="${this.did}"></sl-qr-code>
+      <sl-dialog id="qr_modal" class="page-dialog" placement="start" fit-content>
+        <sl-qr-code id="qr_code"></sl-qr-code>
       </sl-dialog> 
     `
   }
