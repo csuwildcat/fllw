@@ -976,6 +976,7 @@ export class ProfileView extends LitElement {
 
       <sl-dialog id="pay_modal" class="page-dialog" label="Payment" placement="start">
         ${Object.entries(this.socialData.payment || {}).map(([type, value]) => {
+          if (!value) return nothing;
           let format = ProfileView.paymentTypes?.[type];
           if (format) {
             let normalized = format?.normalize(value) || value;

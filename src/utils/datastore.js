@@ -350,7 +350,6 @@ class Datastore {
     }
     options.published = true;
     let hero = story._hero;
-    console.log(hero);
     let data = story.cache.json;
     const heroId = data.hero;
     if (hero || heroId) {
@@ -358,10 +357,9 @@ class Datastore {
         let response = await this.queryProtocolRecords('social', 'story/media', {
           recordId: heroId
         });
-        hero = response.record;
+        hero = response.records[0];
       }
       const response = await hero.update({ data: options.data });
-      console.log(response);
       hero.send(story.author);
     }
     else {
