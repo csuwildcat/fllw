@@ -510,6 +510,7 @@ export class ProfileView extends LitElement {
       color: '#00c853',
       newTab: true,
       normalize: (val, link) => {
+        if (!val) return;
         val = val.replace(/^(?!\$)/, '$');
         return link ? `https://cash.app/${val}` : val;
       }
@@ -532,7 +533,9 @@ export class ProfileView extends LitElement {
       icon: 'cash-coin',
       color: '#37b4fc',
       normalize: (val, link) => {
-        return link ? null : val.replace(/^(?!\@)/, '@');
+        if (!val) return;
+        // todo: better link to preferred app to submit payments to daps
+        return link ? `dap:${val}` : val;
       }
     }
   }
@@ -732,6 +735,8 @@ export class ProfileView extends LitElement {
       return obj;
     }, {})
 
+    const hasPaymentTags = Object.keys(this.socialData?.payment || {}).length
+
     return html`
 
       <section id="profile_card" flex="column fill">
@@ -746,7 +751,7 @@ export class ProfileView extends LitElement {
             <w5-img id="avatar" src="${ifDefined(this.avatar?.cache?.uri)}" fallback="${this.owner ? 'person-fill-add' : 'person-fill'}" @click="${e => this.avatarInput.click()}">
               <input id="avatar_input" type="file" accept="image/png, image/jpeg, image/gif" style="display: none" @change="${e => this.handleFileChange('avatar', this.avatarInput)}" />
             </w5-img>
-            ${ !Object.keys(this.socialData?.payment).length ? nothing : html`
+            ${ !hasPaymentTags ? nothing : html`
               <sl-button class="pay-button" size="small" @click="${e => this.payModal.show()}">
                 $ Pay
               </sl-button>`
@@ -952,7 +957,7 @@ export class ProfileView extends LitElement {
       </sl-dialog>
 
       <sl-dialog id="pay_modal" class="page-dialog" label="Payment" placement="start">
-        ${Object.entries(this.socialData.payment).map(([type, value]) => {
+        ${Object.entries(this.socialData.payment || {}).map(([type, value]) => {
           let format = ProfileView.paymentTypes?.[type];
           if (format) {
             return html`

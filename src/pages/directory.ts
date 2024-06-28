@@ -7,6 +7,7 @@ import { SpinnerMixin, SpinnerStyles } from '../utils/spinner.js';
 import { DOM, notify, natives } from '../utils/helpers.js';
 
 import PageStyles from '../styles/page.css' assert { type: 'css' };
+import { lookupDidFromPaytag } from '../utils/paytag-helper.js';
 
 @customElement('page-directory')
 export class PageDirectory extends SpinnerMixin(LitElement) {
@@ -84,11 +85,13 @@ export class PageDirectory extends SpinnerMixin(LitElement) {
     this.lookupProfile(path.did);
   }
 
-  lookupProfile(did = this.didInput.value){
-    if (!did || did === this.profileView.did) {
+  async lookupProfile(input = this.didInput.value){
+    if (!input || input === this.profileView.did) {
       return;
     }
     this.startSpinner(null, { minimum: 2000 });
+    // detect if its a paytag instead of a did
+    const did = await lookupDidFromPaytag(input) || input;
     this.profileView.did = did;
     if (did !== this.path.did) {
       router.navigateTo(`/profiles/${did}`);
@@ -101,11 +104,11 @@ export class PageDirectory extends SpinnerMixin(LitElement) {
         <sl-input id="did_input"
                   required
                   size="small"
-                  placeholder="Enter a DID to view a profile"
+                  placeholder="Enter a Paytag or a DID to view a profile"
                   pattern="did:dht:[a-zA-Z0-9]+"
                   @keydown="${ e => e.key === 'Enter' && this.lookupProfile() }"
                   @keypress="${ e => {
-                    return !(/^[a-zA-Z0-9_\-:.]+$/.test(String.fromCharCode(e.charCode || e.which))) ? e.preventDefault() : true
+                    return !(/^[a-zA-Z0-9_\-:@$/.]+$/.test(String.fromCharCode(e.charCode || e.which))) ? e.preventDefault() : true
                   }}"
         ></sl-input>
         <sl-button variant="primary" size="small" @click="${ e => this.lookupProfile() }" slot="suffix">Find</sl-button>

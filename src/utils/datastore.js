@@ -35,7 +35,7 @@ class Datastore {
         let record = installed.protocols.find(record => z === record.definition.protocol);
         let definition = protocols.byUri[z].definition;
         let appDef = natives.canonicalize(definition);
-        let configuredDef = natives.canonicalize(record.definition || null);
+        let configuredDef = natives.canonicalize(record?.definition || null);
         if (appDef !== configuredDef) {
           console.log('installing protocol: ' + z);
           configurationPromises.push(this.dwn.protocols.configure({
