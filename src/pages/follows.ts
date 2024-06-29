@@ -41,11 +41,12 @@ export class PageFollows extends LitElement {
       box-sizing: border-box;
       width: 100%;
       max-width: 500px;
-      padding: 2em 1.5em;
+      padding: 3em 1.5em;
     }
 
     #results > profile-card {
       margin: 0 0 1.5em;
+      cursor: pointer;
     }
 
     `
@@ -110,7 +111,11 @@ export class PageFollows extends LitElement {
       </header>
       <section>
         <div id="results">${
-          Array.from(this.entries).map(record => html`<profile-card did="${record.recipient}" remove-unfollowed follow-button following></profile-card>`)
+          Array.from(this.entries).map(record => html`
+            <profile-card did="${record.recipient}" remove-unfollowed follow-button following @click="${e => {
+              router.navigateTo(`/profiles/${record.recipient}`)
+            }}"></profile-card>
+          `)
         }</div>
       </section>
     `;

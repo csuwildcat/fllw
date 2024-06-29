@@ -147,8 +147,8 @@ export class ProfileView extends LitElement {
         /* font-size: calc(var(--avatar-size) * 0.2); */
       }
 
-      #profile_name sl-copy-button {
-        font-size: 0.65em;
+      sl-copy-button {
+        font-size: 0.925rem;
         opacity: 0.5;
         transition: opacity 0.3s ease;
       }
@@ -157,6 +157,14 @@ export class ProfileView extends LitElement {
         opacity: 1;
       }
 
+      .qr_button {
+        font-size: 0.95rem;
+      }
+
+      .qr_button::part(base) {
+        padding-left: 0;
+        padding-right: 0;
+      }
 
       #profile_name small {
         color: #777;
@@ -371,6 +379,63 @@ export class ProfileView extends LitElement {
         grid-column-start: 2;
       }
 
+      #profile_edit_modal::part(body) {
+        padding: 0;
+      }
+
+      #profile_edit_modal sl-tab-panel {
+        height: 27em;
+      }
+
+      #qr_modal::part(title) {
+        padding-right: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      #qr_modal::part(panel) {
+        max-width: 20em;
+      }
+
+      #qr_modal::part(body) {
+        margin: 0 auto;
+      }
+
+      #qr_modal sl-qr-code {
+        padding: 1em;
+        background: #fff;
+        border-radius: 0.25rem;
+      }
+
+      #qr_modal sl-qr-code::part(base) {  
+        width: 100% !important;
+        max-width: 15rem;
+        height: auto !important;
+        aspect-ratio: 1 / 1;
+      }
+
+      #pay_modal .payment-type {
+        margin: 0 0 1.5em;
+        font-size: 1.25em;
+        align-items: center; 
+      }
+
+      #pay_modal .payment-type:last-child {
+        margin: 0 0 0.5em;
+      }
+
+      #pay_modal .payment-type a {
+        overflow: hidden;
+        text-decoration: none;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      #pay_modal .payment-type sl-icon {
+        font-size: 1.25em;
+        margin: 0 0.25em 0 0;
+      }
+
       @media(max-width: 500px) {
         #hero::after {
           display: none;
@@ -415,6 +480,15 @@ export class ProfileView extends LitElement {
 
   @query('#job_form', true)
   jobForm;
+
+  @query('#qr_modal', true)
+  qrModal;
+
+  @query('#qr_code', true)
+  qrCode;
+
+  @query('#pay_modal', true)
+  payModal;
 
   @query('#hero_input', true)
   heroInput;
@@ -462,6 +536,39 @@ export class ProfileView extends LitElement {
   credentialData: any;
   careerData: any;
 
+  static paymentTypes = {
+    cashtag: {
+      icon: 'cash-app',
+      color: '#00c853',
+      newTab: true,
+      normalize: (val, link) => {
+        val = val.replace(/^(?!\$)/, '$');
+        return link ? `https://cash.app/${val}` : val;
+      }
+    },
+    ln_address: {
+      icon: 'lightning-charge',
+      color: '#cac55c',
+      normalize: (val, link) => {
+        return link ? `lightning:${val}` : val;
+      }
+    },
+    btc_address: {
+      icon: 'currency-bitcoin',
+      color: '#f18f19',
+      normalize: (val, link) => {
+        return link ? `bitcoin:${val}` : val;
+      }
+    },
+    dap: {
+      icon: 'dap-white',
+      color: '#37b4fc',
+      normalize: (val, link) => {
+        return link ? null : val.replace(/^(?!\@)/, '@');
+      }
+    }
+  }
+
   constructor() {
     super();
     this.clearData();
@@ -477,7 +584,8 @@ export class ProfileView extends LitElement {
     this.socialData = {
       displayName: '',
       bio: '',
-      apps: {}
+      apps: {},
+      payment: {}
     }
     this.credentialData = {};
     this.careerData = {
@@ -537,7 +645,7 @@ export class ProfileView extends LitElement {
         skills: [],
         education: []
       };
-      this.credentialData = this.credential?.cache?.json || defaultCredentialData;
+      this.credentialData = this.credential?.cache?.json || {};
       this.loadingError = false;
       this.loaded = true;
       DOM.fireEvent(this, 'profile-view-load-success')
@@ -708,6 +816,12 @@ export class ProfileView extends LitElement {
     }
   }
 
+  showQrModal(title, value){
+    this.qrModal.label = title;
+    this.qrCode.value = value;
+    this.qrModal.show();
+  }
+
   render(){
 
     const today = new Date();
@@ -738,6 +852,11 @@ export class ProfileView extends LitElement {
             <w5-img id="avatar" src="${ifDefined(this.avatar?.cache?.uri)}" fallback="${this.owner ? 'person-fill-add' : 'person-fill'}" @click="${e => this.avatarInput.click()}">
               <input id="avatar_input" type="file" accept="image/png, image/jpeg, image/gif" style="display: none" @change="${e => this.handleFileChange('avatar', this.avatarInput)}" />
             </w5-img>
+            ${ !Object.keys(this.socialData?.payment || {}).length ? nothing : html`
+              <sl-button class="pay-button" size="small" @click="${e => this.payModal.show()}">
+                $ Pay
+              </sl-button>`
+            }
             ${ this.owner ? nothing : html`
               <sl-button id="follow_button" size="small" variant="${ this.following ? 'success' : 'default' }" @click="${ e => this.toggleFollow() }" ?loading="${ this.following === null }">
                 ${ this.following ? 'Following' : 'Follow' }
@@ -751,15 +870,21 @@ export class ProfileView extends LitElement {
           </div>
           <div id="profile_name">
             <h2>
+              
               <sl-copy-button value="${this.did}" copy-label="Copy this user's DID"> 
               </sl-copy-button> 
               ${this.socialData.displayName || 'Anon'} 
+              
               ${!this.credentialData.reverify && this.credentialData.verified_name 
                 ? html`<small style="font-size:small" >&nbsp;&nbsp; Verified as ${this.credentialData.verified_name} </small>` 
                 : html`<sl-button class="edit-button" size="small" @click="${e => this.getVerified()}">
                   Get Verified
                 </sl-button>`
               }
+              &nbsp;
+              <sl-tooltip content="Scan this user's DID">
+                <sl-icon-button class="qr_button" name="simple-qr" size="small" @click="${ e => this.showQrModal("Scan this user's DID", this.did) }"></sl-icon-button>
+              </sl-tooltip>
             </h2>
             <small>${this.socialData.tagline || ''}</small>
           </div> 
@@ -881,7 +1006,7 @@ export class ProfileView extends LitElement {
               `
             }
           </div>
-        </sl-tab-panel>
+        </sl-tab-panel> 
 
         ${ !this.owner ? nothing : html`
           <sl-tab-panel name="notifications" ?active="${this.panel === 'notifications' || nothing}">
@@ -894,20 +1019,35 @@ export class ProfileView extends LitElement {
 
       <sl-dialog id="profile_edit_modal" class="page-dialog" label="Edit Profile" placement="start">
         <form id="profile_form" @sl-change="${e => this.saveSocialInfo(e)}" @submit="${e => e.preventDefault()}">
+          <sl-tab-group>
 
-          <sl-input name="displayName" value="${this.socialData.displayName}" label="Display Name" help-text="A public name visible to everyone"></sl-input>
-          <sl-input name="tagline" value="${this.socialData.tagline}" label="What you do" help-text="Your title or personal tagline" maxlength="80"></sl-input>
-          <sl-textarea name="bio" value="${this.socialData.bio}" label="About" help-text="Tell people a little more about yourself" rows="4" resize="none"></sl-textarea>
+            <sl-tab slot="nav" panel="bio">Bio</sl-tab>
+            <sl-tab slot="nav" panel="social">Social Accounts</sl-tab>
+            <sl-tab slot="nav" panel="payment">Payment</sl-tab>
+            
+            <sl-tab-panel name="bio">
+              <sl-input name="displayName" value="${this.socialData.displayName}" label="Display Name" help-text="A public name visible to everyone"></sl-input>
+              <sl-input name="tagline" value="${this.socialData.tagline}" label="What you do" help-text="Your title or personal tagline" maxlength="80"></sl-input>
+              <sl-textarea name="bio" value="${this.socialData.bio}" label="About" help-text="Tell people a little more about yourself" rows="4" resize="none"></sl-textarea>
+            </sl-tab-panel>
 
-          <h3>Social Accounts</h3>
-          <sl-input label="X (Twitter)" name="apps.x" value="${this.socialData.apps.x}" class="label-on-left"></sl-input>
-          <sl-input label="Instagram" name="apps.instagram" value="${this.socialData.apps.instagram}" class="label-on-left"></sl-input>
-          <sl-input label="Facebook" name="apps.facebook" value="${this.socialData.apps.facebook}" class="label-on-left"></sl-input>
-          <sl-input label="GitHub" name="apps.github" value="${this.socialData.apps.github}" class="label-on-left"></sl-input>
-          <sl-input label="LinkedIn" name="apps.linkedin" value="${this.socialData.apps.linkedin}" class="label-on-left"></sl-input>
-          <sl-input label="Tidal" name="apps.tidal" value="${this.socialData.apps.tidal}" class="label-on-left"></sl-input>
-          <sl-input label="Cash" name="apps.cash" value="${this.socialData.apps.cash}" class="label-on-left"></sl-input>
-        
+            <sl-tab-panel name="social">
+              <sl-input label="X (Twitter)" name="apps.x" value="${this.socialData.apps.x}" class="label-on-left"></sl-input>
+              <sl-input label="Instagram" name="apps.instagram" value="${this.socialData.apps.instagram}" class="label-on-left"></sl-input>
+              <sl-input label="Facebook" name="apps.facebook" value="${this.socialData.apps.facebook}" class="label-on-left"></sl-input>
+              <sl-input label="GitHub" name="apps.github" value="${this.socialData.apps.github}" class="label-on-left"></sl-input>
+              <sl-input label="LinkedIn" name="apps.linkedin" value="${this.socialData.apps.linkedin}" class="label-on-left"></sl-input>
+              <sl-input label="Tidal" name="apps.tidal" value="${this.socialData.apps.tidal}" class="label-on-left"></sl-input>
+              <sl-input label="Cash" name="apps.cash" value="${this.socialData.apps.cash}" class="label-on-left"></sl-input>
+            </sl-tab-panel>
+
+            <sl-tab-panel name="payment">
+              <sl-input label="Cashtag" name="payment.cashtag" value="${this.socialData?.payment?.cashtag}" class="label-on-left"></sl-input>
+              <sl-input label="Bitcoin Address" name="payment.btc_address" value="${this.socialData?.payment?.btc_address}" class="label-on-left"></sl-input>
+              <sl-input label="Lightning Address" name="payment.ln_address" value="${this.socialData?.payment?.ln_address}" class="label-on-left"></sl-input>
+              <sl-input label="DAP" name="payment.dap" value="${this.socialData?.payment?.dap}" class="label-on-left"></sl-input>
+            </sl-tab-panel>
+          </sl-tab-group>
         </form>
 
         <sl-button class="edit-button" size="small" @click="${e => this.credentialEditModal.show()}">
@@ -938,6 +1078,34 @@ export class ProfileView extends LitElement {
         </form>
         <sl-button slot="footer" variant="danger" @click="${ e => this.jobModal.hide() }">Cancel</sl-button>
         <sl-button slot="footer" variant="primary" @click="${ e => this.saveJob(true) }">Save</sl-button>
+      </sl-dialog>
+
+      <sl-dialog id="pay_modal" class="page-dialog" label="Payment" placement="start">
+        ${Object.entries(this.socialData.payment || {}).map(([type, value]) => {
+          if (!value) return nothing;
+          let format = ProfileView.paymentTypes?.[type];
+          if (format) {
+            let normalized = format?.normalize(value) || value;
+            let link = format?.normalize(value, true);
+            return html`
+              <div class="payment-type" flex>
+                <sl-icon name="${format.icon}" style="color: ${format.color || '#fff'}"></sl-icon>
+                <a href="${link || nothing}" target="${format.newTab ? '_blank' : nothing}">
+                  ${normalized}
+                </a>
+                <sl-copy-button value="${normalized}" copy-label="Copy"></sl-copy-button>
+                <sl-tooltip content="Show QR">
+                  <sl-icon-button class="qr_button" name="simple-qr" size="small" @click="${ e => this.showQrModal(normalized, link || normalized) }"></sl-icon-button>
+                </sl-tooltip>
+              </div>
+            `
+          }
+          else return nothing;
+        })}
+      </sl-dialog>
+
+      <sl-dialog id="qr_modal" class="page-dialog" placement="start" fit-content>
+        <sl-qr-code id="qr_code"></sl-qr-code>
       </sl-dialog> 
     `
   }

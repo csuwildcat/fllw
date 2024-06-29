@@ -7,6 +7,44 @@ const drlCaptureRegexp = /^(?:dweb:\/\/)?(did:[^\/]+)(?:\/protocols\/([^\/]+)\/?
 const hasBuffers = typeof Buffer !== 'undefined';
 
 const natives = {
+  canonicalize: function(object) {
+    var buffer = '';
+    serialize(object);
+    return buffer;
+    function serialize(object) {
+      if (object === null || typeof object !== 'object' ||
+          object.toJSON != null) {
+          buffer += JSON.stringify(object);
+      }
+      else if (Array.isArray(object)) {
+          buffer += '[';
+          let next = false;
+          object.forEach((element) => {
+              if (next) {
+                  buffer += ',';
+              }
+              next = true;
+              serialize(element);
+          });
+          buffer += ']';
+
+      }
+      else {
+          buffer += '{';
+          let next = false;
+          Object.keys(object).sort().forEach((property) => {
+              if (next) {
+                  buffer += ',';
+              }
+              next = true;
+              buffer += JSON.stringify(property);
+              buffer += ':';
+              serialize(object[property]);
+          });
+          buffer += '}';
+      }
+    }
+  },
   deepSet(obj, path, value) {
     const keys = path.split('.');
     const lastKey = keys.pop();

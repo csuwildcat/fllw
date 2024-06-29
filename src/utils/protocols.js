@@ -207,6 +207,9 @@ const profileDefinition = {
     career: {
       dataFormats: ['application/json']
     },
+    payment: {
+      dataFormats: ['application/json']
+    },
     avatar: {
       dataFormats: ['image/gif', 'image/png', 'image/jpeg']
     },
@@ -223,9 +226,12 @@ const profileDefinition = {
     hero: {},
     messaging: {},
     address: {},
-    phone: {}
+    phone: {},
+    payment: {}
   }
 }
+
+
 
 export const profile = {
   uri: profileDefinition.protocol,
@@ -237,6 +243,11 @@ export const social = {
   uri: socialDefinition.protocol,
   schemas: addSchemas(socialDefinition),
   definition: socialDefinition
+}
+
+export const byUri = {
+  [profileDefinition.protocol]: profile,
+  [socialDefinition.protocol]: social,
 }
 
 export const credential = {

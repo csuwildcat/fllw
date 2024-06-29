@@ -28,36 +28,35 @@ class Datastore {
   }
 
   async installProtocols(){
-    const response = await this.dwn.protocols.query({
-      message: {
-        filter: {
-          protocol: protocols.social.uri
+    const installed = await this.dwn.protocols.query({ message: {} });
+    const configurationPromises = [];
+    try {
+      for (let z in protocols.byUri) {
+        let record = installed.protocols.find(record => z === record.definition.protocol);
+        let definition = protocols.byUri[z].definition;
+        let appDef = natives.canonicalize(definition);
+        let configuredDef = natives.canonicalize(record.definition || null);
+        if (appDef !== configuredDef) {
+          console.log('installing protocol: ' + z);
+          configurationPromises.push(this.dwn.protocols.configure({
+            message: { definition }
+          }))
         }
       }
-    });
-    if (response.protocols.length) {
-      return true;
-    }
-    else {
-      console.log('installing');
+      const configurationResponses = await Promise.all(configurationPromises);
       try {
-        await Promise.all(
-          Object.values(protocols).map(async _protocol => {
-            const { protocol } = await this.dwn.protocols.configure({
-              message: {
-                definition: _protocol.definition
-              }
-            })
-            const response = await protocol.send(this.did);
-          })
-        )
-        console.log('installed');
+        await Promise.all(configurationResponses.map(({ protocol }) => protocol.send(this.did)));
       }
       catch (e) {
-        console.log(e);
-        return false;
+        console.log('remote push of configuration failed', e);
+        return true;
       }
     }
+    catch (e) {
+      console.log('local install of configuration failed', e);
+      return false;
+    }
+    return true;
   }
 
   async getProtocol(protocolUri, options = {}){
@@ -376,7 +375,6 @@ class Datastore {
     }
     options.published = true;
     let hero = story._hero;
-    console.log(hero);
     let data = story.cache.json;
     const heroId = data.hero;
     if (hero || heroId) {
@@ -384,10 +382,9 @@ class Datastore {
         let response = await this.queryProtocolRecords('social', 'story/media', {
           recordId: heroId
         });
-        hero = response.record;
+        hero = response.records[0];
       }
       const response = await hero.update({ data: options.data });
-      console.log(response);
       hero.send(story.author);
     }
     else {

@@ -58,6 +58,11 @@ sl-button sl-icon {
   margin-right: -0.2em;
 }
 
+sl-dialog[fit-content]::part(panel) {
+  width: fit-content;
+  height: fit-content;
+}
+
 *::part(input-field) {
   background: var(--sl-input-background-color);
   border: solid var(--sl-input-border-width) var(--sl-input-border-color);
