@@ -79,25 +79,19 @@ export class PageDirectory extends SpinnerMixin(LitElement) {
     }
   }
 
-  constructor() {
-    super();
+  async onRouteEnter(route, path){
+    this.path = path;
+    this.lookupProfile(path.did);
   }
 
-  async initialize(){
-
-  }
-
-  lookupProfile(did){
-    did = did || this.didInput.value;
-    if (did === this.profileView.did) {
+  lookupProfile(did = this.didInput.value){
+    if (!did || did === this.profileView.did) {
       return;
     }
-    else if (did === this.context.did) {
+    this.startSpinner(null, { minimum: 2000 });
+    this.profileView.did = did;
+    if (did !== this.path.did) {
       router.navigateTo(`/profiles/${did}`);
-    }
-    else {
-      this.startSpinner(null, { minimum: 1000 });
-      this.profileView.did = did
     }
   }
 

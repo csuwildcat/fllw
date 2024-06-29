@@ -209,10 +209,10 @@ export class ProfileCard extends SpinnerMixin(LitElement) {
   async verify(vc){
     console.log('verify')
     if(vc){
-      this.verified_name = await verifyVc(null, vc, this.did);
+      const {record} = await datastore.createProtocolRecord('profile', 'credential', {store: false})
+      this.verified_name = await verifyVc(this.did, record.authorization, vc);
       if(!this.verified_name){
         notify.error('Unable to get the verified name')
-
       }
     }
   }

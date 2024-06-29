@@ -1,90 +1,43 @@
 
-import * as CryptoJS from 'crypto-js'
+const sophtronDWNServer = 'http://localhost:8083/api'
+// const sophtronDWNServer = 'https://dwn.sophtron-prod.com/api'
 
-function hmac(text, key){
-  let hmac = CryptoJS.algo.HMAC.create(CryptoJS.algo.SHA256, CryptoJS.enc.Base64.parse(key));
-  hmac.update(text);
-  return CryptoJS.enc.Base64.stringify(hmac.finalize());
-}
-
-let sophtronConfig;
-
-function buildSophtronAuthCode(httpMethod, url){
-  let authPath = url.substring(url.lastIndexOf('/')).toLowerCase();
-  let text = httpMethod.toUpperCase() + '\n' + authPath;
-  let b64Sig = hmac(text, sophtronConfig.sophtronClientSecret);
-  let authString = 'FIApiAUTH:' + sophtronConfig.sophtronClientId + ':' + b64Sig + ':' + authPath;
-  return authString;
-}
-
-function encrypt(text, keyHex, ivHex) {
-  if (!text) {
-    return '';
-  }
-  const key  = CryptoJS.enc.Hex.parse(keyHex);
-  const iv  = CryptoJS.enc.Hex.parse(ivHex);
-  const encrypted = CryptoJS.AES.encrypt(text, key, {iv, mode: CryptoJS.mode.CBC, padding: CryptoJS.pad.Pkcs7})
-  const hex = encrypted.ciphertext.toString();
-  return hex;
-}
-
-async function getSophtronAuthCode(){
-  const uuid = CryptoJS.enc.Utf8.stringify(CryptoJS.enc.Base64.parse(sophtronConfig.sophtronClientSecret))
-  const key = CryptoJS.enc.Hex.stringify(CryptoJS.enc.Utf8.parse(uuid.replaceAll('-', '')));
-  const iv = CryptoJS.enc.Hex.stringify(CryptoJS.lib.WordArray.random(16));
-  const provider = {
-    sophtron: {
-      clientId: sophtronConfig.sophtronClientId,
-      secret: sophtronConfig.sophtronClientSecret,
-      endpoint: sophtronConfig.sophtronApiServer || 'https://api.sophtron-prod.com/api',
-      vcEndpoint: sophtronConfig.sophtronVcServer || 'https://vc.sophtron-prod.com/api',
-      provider: 'sophtron',
-      available: true
-    }
-  }
-  const payload = encrypt(JSON.stringify(provider), key, iv);
-  const phrase = buildSophtronAuthCode('post', 'secretexchange' )
-  const rawResponse = await fetch( (sophtronConfig.sophtronAuthServer || 'https://auth.sophtron-prod.com/api') + '/v2/secretexchange', {
-    method: 'POST',
+async function getSophtronAuthCode(did, auth){
+  const rawResponse = await fetch( `${sophtronDWNServer}/did/${encodeURIComponent(did)}/ucw`, {
+    method: 'GET',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: phrase
+      DidAuth: JSON.stringify(auth)
     },
-    body: JSON.stringify({Payload: payload})
   });
   const token = await rawResponse.json();
-  console.log('Retrieved ucw auth token', token)
-  const str = `sophtron;${token.Token};${iv}`
-  const b64 = CryptoJS.enc.Base64.stringify(CryptoJS.enc.Utf8.parse(str))
-  console.log('sophtron auth code:', b64)
-  return b64;
+  console.log('Retrieved sophtron auth token', token)
+  return token;
 }
 
-export async function getVC(providerConfig, customer_id, connection_id) {
-  sophtronConfig = providerConfig;
-  const path = (sophtronConfig?.sophtronVcServer || 'https://vc.sophtron-prod.com/api') + `/vc/customers/${customer_id}/members/${connection_id}/identity?filters=name`
+export async function getVC(did, auth, connection_id) {
+  const path = `${sophtronDWNServer}/did/${did}/vc/${connection_id}`
   const ret = await fetch(path, {
     method: 'GET',
     headers: {
       'Accept': 'application/json',
       'Content-Type': 'application/json',
-      Authorization: buildSophtronAuthCode('get', path)
+      DidAuth: JSON.stringify(auth)
     }
   });
   const json = await ret.json();
   return json.vc;
 }
 
-export async function verifyVc(providerConfig, raw, did){
-  sophtronConfig = providerConfig;
-  // verifyVc does not require credentials, hence sophtronConfig is optional
-  const path = (sophtronConfig?.sophtronVcServer || 'https://vc.sophtron-prod.com/api') + `/credentials/verify`
+export async function verifyVc(did, auth, raw){
+  const path = `${sophtronDWNServer}/did/${did}/verify`
   const ret = await fetch(path, {
     method: 'POST',
     headers: {
       'Accept': 'application/json',
       'Content-Type': 'text/plain',
       'Content-Length': raw.length,
+      DidAuth: JSON.stringify(auth)
     },
     body: raw
   });
@@ -115,24 +68,25 @@ async function onFinish(e){
     console.log('Unexpected ucw result')
   }
 }
-const testEvent = null;
-// const testEvent = {
-//   "_type": "onFinish",
-//   "event": "vcs/connect/memberConnected",
-//   "type": "message",
-//   "connection_id": "1febf636-fc0d-4da0-9781-feff3e65c7a7",
-//   "data": {
-//       "session_guid": "87f87577-92a0-4296-af63-095f76529991",
-//       "user_guid": "1d93d99e-e2f4-4dd0-b0d4-3bddd267b4c3",
-//       "member_guid": "1febf636-fc0d-4da0-9781-feff3e65c7a7",
-//       "provider": "sophtron",
-//       "id": "1febf636-fc0d-4da0-9781-feff3e65c7a7"
-//   }
-// }
 
-export async function show(did, providerConfig, onWcwFinished){
+let testEvent = null;
+testEvent = {
+    "_type": "onFinish",
+    "event": "vcs/connect/memberConnected",
+    "type": "message",
+    "connection_id": "78c901b1-8563-435c-bc79-2cdfa3ee02ad",
+    "data": {
+        "session_guid": "",
+        "user_guid": "f16e771d-ada4-434b-aedf-fa816711f292",
+        "member_guid": "78c901b1-8563-435c-bc79-2cdfa3ee02ad",
+        "provider": "sophtron",
+        "id": "78c901b1-8563-435c-bc79-2cdfa3ee02ad"
+    }
+}
+
+export async function show(did, auth, onWcwFinished){
   ucwCallback = onWcwFinished;
-  sophtronConfig = providerConfig;
+  const token = await getSophtronAuthCode(did, auth);
   if(testEvent){
     onFinish(testEvent)
     return
@@ -146,7 +100,7 @@ export async function show(did, providerConfig, onWcwFinished){
     provider: null,
     params: {},
     // auth: await getUcpAuthCode(),
-    auth: await getSophtronAuthCode(),
+    auth: token,
     onEvent: onEvent,
     onShow: onEvent,
     onInit: onEvent,

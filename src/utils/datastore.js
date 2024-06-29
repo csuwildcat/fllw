@@ -28,7 +28,6 @@ class Datastore {
   }
 
   async installProtocols(){
-    console.log(protocols.social);
     const response = await this.dwn.protocols.query({
       message: {
         filter: {
@@ -44,14 +43,12 @@ class Datastore {
       try {
         await Promise.all(
           Object.values(protocols).map(async _protocol => {
-
             const { protocol } = await this.dwn.protocols.configure({
               message: {
                 definition: _protocol.definition
               }
             })
             const response = await protocol.send(this.did);
-            console.log(response);
           })
         )
         console.log('installed');
@@ -135,8 +132,7 @@ class Datastore {
   }
 
   async createProtocolRecord(protocol, path, options = {}){
-    console.log(arguments);
-    await this.ready;;
+    await this.ready;
     const params = {
       message: {
         protocol: protocols[protocol].uri,
@@ -149,11 +145,13 @@ class Datastore {
     if (options.store === false) params.store = options.store;
     if (options.parentContextId) params.message.parentContextId = options.parentContextId;
     if (options.contextId) params.message.contextId = options.contextId;
-    if (options.data) params.data = options.data;
+    
+    params.message.dataFormat = options.dataFormat || 'application/json';
+    if (typeof options.data !== 'undefined') params.data = options.data;
     else if (options.dataFormat === 'application/json') {
       params.data = {};
     }
-    if (options.dataFormat) params.message.dataFormat = options.dataFormat;
+    
     if (options.published !== undefined) params.message.published = options.published;
     if (options.recipient) params.message.recipient = options.recipient;
     if (options.role) params.message.protocolRole = options.role;
@@ -313,6 +311,14 @@ class Datastore {
     return record;
   }
 
+  async deleteStory(recordId) {
+    const response = await web5.dwn.records.delete({
+      message: { recordId },
+    });
+    if (response.status > 399) throw 'Delete failed';
+    return response;
+  }
+
   async readStory(id, options = {}) {
     const { record, status } = await this.readProtocolRecord(id, options)
     if (status.code > 399) {
@@ -345,7 +351,7 @@ class Datastore {
   }
 
   async readStoryMedia(id, options = {}) {
-    const { record, status } = await this.readProtocolRecord(id, options)
+    const { record, status } = await this.readProtocolRecord(id, options);
     if (status.code > 399) {
       const error = new Error(status.detail);
             error.code = status.code;
@@ -417,21 +423,39 @@ class Datastore {
 
   queryFollows = (options = {}) => this.queryProtocolRecords('social', 'follow', options)
 
+  async getFollows(items = [], cursor, _options = {}){
+    const options = Object.assign({
+      pagination: {
+        limit: 10,
+      }
+    }, _options);
+    if (cursor) {
+      options.pagination.cursor = cursor;
+    }
+    var { cursor, records } = await this.queryProtocolRecords('social', 'follow', options)
+    if (records.length) {
+      items.push(...records);
+    }
+    return { items, cursor }
+  }
+
   async toggleFollow(did, follow){
-    var record = await datastore.queryFollows({ recipient: did, latestRecord: true })
+    var {records, status} = await datastore.queryFollows({ recipient: did })
+    console.log(records);
+    var record = records[0];
     if (!record) {
-      var { record } = await datastore.createProtocolRecord('social', 'follow', { recipient: did, dataFormat: 'application/json' })
-      return record;
+      var { record } = await datastore.createProtocolRecord('social', 'follow', { recipient: did })
     }
     else if (record?.isDeleted) {
       record.update();
     }
     else if (!follow) {
-      var { record } = await this.dwn.records.delete({
+      var { status } = await this.dwn.records.delete({
         message: {
           recordId: record.id,
         }
       });
+      return false;
     }
     return record;
   }

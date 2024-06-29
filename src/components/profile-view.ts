@@ -15,17 +15,9 @@ import PageStyles from '../styles/page.css' assert { type: 'css' };
 
 import './w5-img'
 import './detail-box'
+import './story-list';
 import './invite-item';
-
-const defaultCredentialData = {
-  providerConfig: {
-    sophtronClientId: '',
-    sophtronClientSecret: '',
-    sophtronAuthServer: 'https://auth.sophtron-prod.com/api',
-    sophtronApiServer: 'https://api.sophtron-prod.com/api',
-    sophtronVcServer: 'https://vc.sophtron-prod.com/api',
-  }
-}
+import { Protocol } from '@web5/api';
 
 @customElement('profile-view')
 export class ProfileView extends LitElement {
@@ -121,11 +113,16 @@ export class ProfileView extends LitElement {
       }
 
       #avatar_wrapper {
+        height: 2.75em;
         margin: 0 0 1.1em;
       }
 
       #avatar_wrapper sl-button {
-        margin: 0.75em 0.75em 0 auto;
+        margin: 0.75em 0.75em 0 0;
+      }
+
+      #avatar_wrapper sl-button:first-of-type {
+        margin-left: auto;
       }
 
       #avatar {
@@ -140,7 +137,9 @@ export class ProfileView extends LitElement {
       }
 
       #profile_name {
+        position: relative;
         margin: 0 0 0.5em 0.1em;
+        z-index: 2;
       }
 
       #profile_name h2 {
@@ -332,64 +331,20 @@ export class ProfileView extends LitElement {
         white-space: pre-wrap;
       }
 
-      /* STORIES */
+      /* Stories */
 
-      #stories_list:has(a) ~ [default-content~="placeholder"]{
+      story-list[has-content] ~ [default-content="placeholder"] {
         display: none;
       }
 
-      #stories_list > a {
-        display: flex;
-        max-height: 11em;
-        margin: 0em 0 1.25em;
-        padding: 0.75em 0.8em 1.25em;
-        text-decoration: none;
-        color: inherit;
-        border-bottom: 2px dotted rgba(255 255 255 / 0.05);
+      story-list > sl-button {
+        display: none;
+        align-self: center;
+        margin: 1em 0 0;
       }
 
-      #stories_list > a:last-child {
-        padding-bottom: 0;
-        border: none;
-      }
-
-      #stories_list > a > w5-img {
-        --size: clamp(4em, 20vw, 10em);
-        margin-right: 1.5em;
-        border-radius: 0.4em;
-      }
-
-      #stories_list .markdown-body {
-        position: relative;
-        font-size: 0.85em;
-        overflow: hidden;
-      }
-
-      #stories_list .markdown-body h1 {
-        font-size: 1.75em;
-      }
-
-      #stories_list .markdown-body h2 {
-        font-size: 1.6em;
-      }
-
-      #stories_list .markdown-body h3 {
-        font-size: 1.45em;
-      }
-
-      #stories_list .markdown-body:after {
-        content: "";
-        display: block;
-        position: absolute;
-        bottom: 0;
-        width: 100%;
-        padding: 2em 0 0.8em;
-        text-align: center;
-        background: linear-gradient(transparent, var(--grey) 90%);
-      }
-
-      #stories_list a .markdown-body > :first-child {
-        margin-top: 0;
+      story-list[more-content] > sl-button {
+        display: inline-block;
       }
 
       .label-on-left {
@@ -419,19 +374,6 @@ export class ProfileView extends LitElement {
       @media(max-width: 500px) {
         #hero::after {
           display: none;
-        }
-
-        #stories_list > a {
-          flex-direction: column;
-          height: auto;
-          max-height: 20em;
-          padding: 0.75em 0 1.25em;
-        }
-
-        #stories_list > a > w5-img {
-          --size: 100%;
-          max-height: 10em;
-          margin: 0 0 1em;
         }
       }
 
@@ -493,12 +435,6 @@ export class ProfileView extends LitElement {
     job: {
       type: Object
     },
-    stories: {
-      type: Array
-    },
-    threads: {
-      type: Array
-    },
     avatar: {
       type: Object
     },
@@ -521,6 +457,7 @@ export class ProfileView extends LitElement {
   hero: any;
   social: any;
   career: any;
+  following: any;
   socialData: any;
   credentialData: any;
   careerData: any;
@@ -536,16 +473,13 @@ export class ProfileView extends LitElement {
     this.hero = {};
     this.social = {};
     this.career = {};
-    this.stories = [];
-    this.storiesCursor = null;
-    this.threads = [];
-    this.threadsCursor = null;
+    this.following = null;
     this.socialData = {
       displayName: '',
       bio: '',
       apps: {}
     }
-    this.credentialData = defaultCredentialData;
+    this.credentialData = {};
     this.careerData = {
       jobs: [],
       skills: [],
@@ -569,6 +503,7 @@ export class ProfileView extends LitElement {
       await this.context.initialize;
       this.owner = did === this.context.did;
       this.clearData();
+      this.checkFollow();
       this.heroImage.style.setProperty('--deterministic-background', hashToGradient(did.split(':')[2]));
       if (this.owner) {
         this.social = this.context.social;
@@ -578,6 +513,7 @@ export class ProfileView extends LitElement {
         this.credential = this.context.credential;
       }
       else {
+        
         const records = await Promise.all([
           datastore.getSocial({ from: did }),
           datastore.readProfileImage('avatar', { from: did }),
@@ -610,9 +546,22 @@ export class ProfileView extends LitElement {
       this.loadingError = true;
       DOM.fireEvent(this, 'profile-view-load-error')
     }
-    this.loadStories();
     this.loading = false;
     DOM.fireEvent(this, 'profile-view-load-complete')
+  }
+
+  async checkFollow(){
+    const response = await datastore.queryFollows({
+      recipient: this.did
+    })
+    this.following = !!response.records[0];
+    this.requestUpdate();
+  }
+
+  async toggleFollow(){
+    const record = await datastore.toggleFollow(this.did);
+    this.following = !!record;
+    this.requestUpdate();
   }
 
   async handleFileChange(type, input){
@@ -661,7 +610,6 @@ export class ProfileView extends LitElement {
       await this.saveCredentials();
     }
   }
-  
 
   async saveCredentials(){
     console.log('saveCredentials')
@@ -684,19 +632,16 @@ export class ProfileView extends LitElement {
   }
   async getVerified(){
     console.log('getVerified')
-    if(!this.credentialData.providerConfig.sophtronClientId || !this.credentialData.providerConfig.sophtronClientSecret){
-      this.credentialEditModal.show();
-      return;
-    }
     this.credentialData.verified_name = null;
+    const {record} = await datastore.createProtocolRecord('profile', 'credential', {store: false})
     if(!this.credentialData.providerData || this.credentialData.reverify === 'ucw'){
       this.credentialData.raw_vc = null
       this.credentialData.providerData = null;
-      ucw_show(this.context.did, this.credentialData.providerConfig, async (providerData) => {
+      ucw_show(this.context.did, record.authorization, async (providerData) => {
         console.log('ucw_show_callback')
         this.credentialData.providerData = providerData;
-        this.credentialData.raw_vc = await getVC(this.credentialData.providerConfig, providerData.customer_id, providerData.connection_id);
-        this.credentialData.verified_name = await verifyVc(this.credentialData.providerConfig, this.credentialData.raw_vc, this.context.did);
+        this.credentialData.raw_vc = await getVC(this.context.did, record.authorization, providerData.connection_id);
+        this.credentialData.verified_name = await verifyVc(this.context.did, record.authorization, this.credentialData.raw_vc);
         this.credentialData.reverify = null;
         await this.saveCredentials();
       });
@@ -705,13 +650,13 @@ export class ProfileView extends LitElement {
       console.log(this.credentialData.providerData)
     }
     if(this.credentialData.providerData && (!this.credentialData.raw_vc || this.credentialData.reverify === 'vc')){
-      this.credentialData.raw_vc = await getVC(this.credentialData.providerConfig, this.credentialData.providerData.customer_id, this.credentialData.providerData.connection_id);
+      this.credentialData.raw_vc = await getVC(this.context.did, record.authorization, this.credentialData.providerData.connection_id);
       this.credentialData.reverify = null;
     }else{
       console.log(this.credentialData.raw_vc)
     }
     if(this.credentialData.raw_vc){
-      this.credentialData.verified_name = await verifyVc(this.credentialData.providerConfig, this.credentialData.raw_vc, this.context.did);
+      this.credentialData.verified_name = await verifyVc(this.context.did, record.authorization, this.credentialData.raw_vc);
       this.credentialData.reverify = null;
       await this.saveCredentials();
     }
@@ -756,28 +701,10 @@ export class ProfileView extends LitElement {
     }
   }
 
-  async loadStories(){
-    const options = {
-      from: this.did,
-      pagination: {
-        limit: 10,
-      }
-    };
-    if (this.storiesCursor) {
-      options.pagination.cursor = this.storiesCursor;
-    }
-    const { cursor, records } = await datastore.queryStories(options)
-    this.storiesCursor = cursor;
-    if (records.length) {
-      this.stories = this.stories.concat(records);
-    }
-    this.storiesLoaded = true;
-  }
-
   onTabShow(e){
     this.panel = e.detail.name;
     if (this.panel === 'stories' && !this.storiesLoaded) {
-      this.loadStories();
+      //this.loadStories();
     }
   }
 
@@ -811,10 +738,16 @@ export class ProfileView extends LitElement {
             <w5-img id="avatar" src="${ifDefined(this.avatar?.cache?.uri)}" fallback="${this.owner ? 'person-fill-add' : 'person-fill'}" @click="${e => this.avatarInput.click()}">
               <input id="avatar_input" type="file" accept="image/png, image/jpeg, image/gif" style="display: none" @change="${e => this.handleFileChange('avatar', this.avatarInput)}" />
             </w5-img>
-            
-            <sl-button class="edit-button" size="small" @click="${e => this.profileEditModal.show()}">
-              Edit profile
-            </sl-button>
+            ${ this.owner ? nothing : html`
+              <sl-button id="follow_button" size="small" variant="${ this.following ? 'success' : 'default' }" @click="${ e => this.toggleFollow() }" ?loading="${ this.following === null }">
+                ${ this.following ? 'Following' : 'Follow' }
+              </sl-button>`
+            }
+            ${ !this.owner ? nothing : html`
+              <sl-button class="edit-button" size="small" @click="${e => this.profileEditModal.show()}">
+                Edit profile
+              </sl-button>`
+            }
           </div>
           <div id="profile_name">
             <h2>
@@ -915,21 +848,9 @@ export class ProfileView extends LitElement {
         </sl-tab-panel>
 
         <sl-tab-panel id="stories_panel" name="stories" ?active="${this.panel === 'stories' || nothing}">
-          <div id="stories_list">
-            ${
-              this?.stories?.map(story => {
-                const data = story.cache.json;
-                const node = render(data.markdown || '');
-                Array.from(node.children).slice(3).forEach(child => child.remove())
-                return html`
-                  <a href="profiles/${story.author}/stories/${story.id}" flex>
-                    <!-- <h3>${storyUtils.getTitle(story.cache.json.markdown)}</h3> -->
-                    <w5-img src="https://dweb/${story.author}/records/${data.hero}"></w5-img>
-                    ${node}
-                  </a>
-              `})
-            }
-          </div>
+          <story-list did="${this.did}">
+            <sl-button href="/profiles/${this.did}/stories" slot="content-end">View all stories</sl-button>
+          </story-list>
           <div default-content="placeholder">
             ${ this.owner ? html`
               <sl-icon name="file-earmark-richtext"></sl-icon>
@@ -1000,12 +921,6 @@ export class ProfileView extends LitElement {
         <form id="credential_form" @sl-change="${e => this.saveCredentialInfo(e)}" @submit="${e => e.preventDefault()}">
           <br/>
           <sl-input name="reverify" value="${this.credentialData.reverify}" label="Reverify option" help-text="Choose to start over from - 'ucw'(re-connect bank), 'vc'(Retrieve VC), 'verify'(Verify VC)"></sl-input>
-          <sl-input name="providerConfig.sophtronClientId" value="${this.credentialData.providerConfig?.sophtronClientId}" label="Sohtron ClientID" help-text=""></sl-input>
-          <sl-input name="providerConfig.sophtronClientSecret" type="password" value="${this.credentialData.providerConfig?.sophtronClientSecret}" label="Sohtron AccessKey" help-text=""></sl-input>
-          <sl-input name="providerConfig.sophtronAuthServer" value="${this.credentialData.providerConfig?.sophtronAuthServer || defaultCredentialData.providerConfig.sophtronAuthServer}" label="Sohtron Auth Server" help-text=""></sl-input>
-          <sl-input name="providerConfig.sophtronApiServer" value="${this.credentialData.providerConfig?.sophtronApiServer || defaultCredentialData.providerConfig.sophtronApiServer}" label="Sohtron Api Server" help-text=""></sl-input>
-          <sl-input name="providerConfig.sophtronVcServer" value="${this.credentialData.providerConfig?.sophtronVcServer || defaultCredentialData.providerConfig.sophtronVcServer}" label="Sohtron VC Server" help-text=""></sl-input>
-
         </form>
         <sl-button slot="footer" variant="primary" @click="${ e => this.credentialEditModal.hide() }">Submit</sl-button>
       </sl-dialog> 
@@ -1026,5 +941,4 @@ export class ProfileView extends LitElement {
       </sl-dialog> 
     `
   }
-
 }

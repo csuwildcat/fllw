@@ -58,8 +58,7 @@ export class W5Image extends LitElement {
 
   static properties = {
     src: {
-      type: String,
-      reflect: true
+      type: String
     },
     fallback: {
       type: String
@@ -69,18 +68,14 @@ export class W5Image extends LitElement {
   @query('#image', true)
   image
 
-  #src;
-  set src(val){
-    this.#src = val;
-    this.removeAttribute('loaded');
-    if (this.image) {
-      this.image.removeAttribute('loaded');
-      this.image.src = val;
+  updated(props){
+    if (props.has('src')) {
+      this.removeAttribute('loaded');
+      if (this.image) {
+        this.image.removeAttribute('loaded');
+        this.image.src = this.src;
+      }
     }
-  }
-
-  get src(){
-    return this.#src;
   }
 
   loaded(){

@@ -8,8 +8,7 @@ import { setAnimation } from '@shoelace-style/shoelace/dist/utilities/animation-
 import { AppRouter } from './components/router';
 import * as protocols from './utils/protocols';
 
-import { UniversalResolver, DidDht, DidWeb } from '@web5/dids';
-const DidResolver = globalThis.DidResolver = new UniversalResolver({ didResolvers: [DidDht, DidWeb] });
+import { activatePolyfills } from './utils/web-features.js';
 
 import './styles/global.css';
 import './components/global.js';
@@ -28,8 +27,11 @@ import './pages/follows.js';
 import './pages/settings.js';
 import './pages/profile.js';
 import './pages/story.js';
+import './pages/stories.js';
 
 // const BASE_URL: string = (import.meta.env.BASE_URL).length > 2 ? (import.meta.env.BASE_URL).slice(1, -1) : (import.meta.env.BASE_URL);
+
+activatePolyfills();
 
 const rootElement = document.documentElement;
 const rootStyles = rootElement.style;
@@ -480,21 +482,20 @@ export class AppContainer extends AppContextMixin(SpinnerMixin(LitElement)) {
           component: '#home'
         },
         {
-          path: '/profiles/:did?',
+          path: '/profiles(/)?:did?',
           component: async (route, path) => {
             await this.initialize;
             if (path.did === this.context.did) {
               return this.profilePage;
             }
             else {
-              this.directoryPage.did = path.did;
               return this.directoryPage;
             }
           }
         },
         {
           path: '/profiles/:did?/stories',
-          component: '#story'
+          component: '#stories'
         },
         {
           path: '/profiles/:did/stories/:story?',
@@ -517,8 +518,7 @@ export class AppContainer extends AppContextMixin(SpinnerMixin(LitElement)) {
   #initialization: Promise<void> | null = null;
 
   async #initialize(){
-    if (this.#initialization) return this.#initialization;
-    return this.#initialization = new Promise(async resolve => {
+    return this.#initialization = this.#initialization || new Promise(async resolve => {
       this.startSpinner(null, { minimum: 0, renderImmediate: true });
       if (localStorage.connected) {
         await this.loadProfile(localStorage.did);
@@ -526,8 +526,8 @@ export class AppContainer extends AppContextMixin(SpinnerMixin(LitElement)) {
       else {
         // await this.getIdentity() 
       }
-      resolve();
       this.initialized = true;
+      resolve();
       await DOM.skipFrame();
       this.stopSpinner()
     });
@@ -551,6 +551,19 @@ export class AppContainer extends AppContextMixin(SpinnerMixin(LitElement)) {
         options: fadeOptions
       });
     });
+  }
+
+  async remoteConnect(){
+    // const response = await Web5.connect({
+    //   remoteDevice: {
+    //     onQrGenerated(str){
+    //       // handle it
+    //     },
+    //     async onPinCapture(){
+    //       return 123456;
+    //     }
+    //   }
+    // })
   }
 
   async viewMembers(context, path){
@@ -612,7 +625,8 @@ export class AppContainer extends AppContextMixin(SpinnerMixin(LitElement)) {
 
       <main>
         <page-home id="home" scroll></page-home>
-        <page-directory id="directory" scroll></page-directory>     
+        <page-directory id="directory" scroll></page-directory>
+        <page-stories id="stories" scroll></page-stories>   
         <page-story id="story" scroll></page-story>
         <page-follows id="follows" scroll></page-follows>
         <page-settings id="settings" scroll></page-settings>
@@ -632,7 +646,7 @@ export class AppContainer extends AppContextMixin(SpinnerMixin(LitElement)) {
             Create a new identity
           </sl-button>
           <div break-text="OR"></div>
-          <sl-button variant="default" size="large">
+          <sl-button variant="default" size="large" @click="${ e => this.remoteConnect() }">
             <sl-icon slot="prefix" name="person-up"></sl-icon>
             Connect your identity
           </sl-button>
@@ -652,10 +666,6 @@ export class AppContainer extends AppContextMixin(SpinnerMixin(LitElement)) {
       <sl-drawer id="view_members_modal" label="Community Members" placement="start">
         <member-list></member-list>
       </sl-drawer>
-
-      <sl-dialog id="member_profile_modal" label="Member Profile" class="modal-page" @sl-request-close="${e => e.detail.source === 'overlay' && e.preventDefault()}">
-        <profile-view id="member_profile_view"></profile-view>
-      </sl-dialog>
     `;
   }
 }
