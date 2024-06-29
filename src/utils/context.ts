@@ -7,6 +7,7 @@ import * as follows from './follows.js';
 const initialState = {
   instance: null,
   did: null,
+  credential: null,
   avatar: null,
   hero: null,
   social: null,
@@ -35,6 +36,7 @@ export const AppContextMixin = (BaseClass) => class extends BaseClass {
       instance: this,
       connected: false,
       did: null,
+      credential: null,
       avatar: null,
       hero: null,
       social: null,
@@ -77,7 +79,9 @@ export const AppContextMixin = (BaseClass) => class extends BaseClass {
         jobs: [],
         skills: [],
         education: [],
-      }, from: did })
+      }, from: did }),
+      await datastore.getCredential({ from: did }) || datastore.createCredential({ data: {
+      }, from: did }),
     ])
     this.updateState({
       did,
@@ -86,6 +90,7 @@ export const AppContextMixin = (BaseClass) => class extends BaseClass {
       hero: records[1],
       social: records[2],
       career: records[3],
+      credential: records[4]
     });
     return did;
   }
@@ -109,6 +114,14 @@ export const AppContextMixin = (BaseClass) => class extends BaseClass {
     await record.update({ data });
     record.send(this.context.did);
     this.updateState({ career: record });
+    return record;
+  }
+
+  async setCredential(data){
+    const record = this.context.credential;
+    await record.update({ data });
+    record.send(this.context.did);
+    this.updateState({ credential: record });
     return record;
   }
 

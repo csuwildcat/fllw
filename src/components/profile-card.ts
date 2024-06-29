@@ -1,12 +1,14 @@
 import { LitElement, html, css, nothing } from 'lit';
 import { customElement, query } from 'lit/decorators.js';
 
-import { DOM } from '../utils/helpers.js';
+import { DOM, notify } from '../utils/helpers.js';
 import { profile as profileProtocol } from '../utils/protocols.js';
 import { SpinnerMixin, SpinnerStyles } from '../utils/spinner.js';
+import  {verifyVc} from '../utils/ucw.js'
 import './global.js'
 
 import '../components/w5-img'
+import { Datastore } from '../utils/datastore.js';
 
 @customElement('profile-card')
 export class ProfileCard extends SpinnerMixin(LitElement) {
@@ -35,11 +37,16 @@ export class ProfileCard extends SpinnerMixin(LitElement) {
           flex-direction: column;
         }
 
-      w5-img {
-        margin: 0 1rem 0 0;
-        border: 2px solid rgba(200, 200, 230, 0.5);
-        border-radius: 0.2rem;
-      }
+        w5-img {
+          margin: 0 1rem 0 0;
+          border: 2px solid rgba(200, 200, 230, 0.5);
+          border-radius: 0.2rem;
+        }
+
+        small {
+          margin: 0 0 0.2em;
+          color: #777;
+        }
 
         :host([vertical]) w5-img {
           --size: 5rem;
@@ -138,7 +145,12 @@ export class ProfileCard extends SpinnerMixin(LitElement) {
       attribute: 'empty-text',
       type: String
     },
+    verified_name: {
+      type: String
+    },
   };
+
+  verified_name: string;
 
   static instances = new Set();
 
@@ -170,7 +182,9 @@ export class ProfileCard extends SpinnerMixin(LitElement) {
     });
     try {
       const social = await datastore.getSocial({ from: did })
+      const credential = await datastore.getCredential({ from: did })
       this.socialData = social.cache.json || {};
+      this.credentialData = credential.cache.json || {};
       this.requestUpdate();
       await DOM.skipFrame();
       this.removeAttribute('loading')
@@ -192,21 +206,38 @@ export class ProfileCard extends SpinnerMixin(LitElement) {
       })
     }
   }
+  async verify(vc){
+    console.log('verify')
+    if(vc){
+      const {record} = await datastore.createProtocolRecord('profile', 'credential', {store: false})
+      this.verified_name = await verifyVc(this.did, record.authorization, vc);
+      if(!this.verified_name){
+        notify.error('Unable to get the verified name')
+      }
+    }
+  }
 
   render() {
     return html`
       <slot name="start"></slot>
       <w5-img part="image" src="${this.did ? `https://dweb/${this.did}/read/protocols/${encodeURIComponent(profileProtocol.uri)}/avatar` : nothing}" fallback="person"></w5-img>
       <div id="content">
-        <h3 part="name">${this?.socialData?.displayName || 'Anon'}</h3>
+        <h3 part="name">${this?.socialData?.displayName || 'Anon'} &nbsp;&nbsp;
+        ${this.credentialData?.raw_vc && !this.verified_name
+          ? html`<sl-button class="edit-button" size="small" @click="${e => this.verify(this.credentialData?.raw_vc)}">
+            Click to Verify
+          </sl-button>` 
+          : html`<small name="verified_name">Verified as ${this.verified_name}</small>`
+        }
+        </h3>
         <slot name="subtitle"></slot>
         ${ !this.minimal && this?.socialData?.bio ? html`<p>${this.socialData.bio}</p>` : nothing }
         <slot name="content-bottom"></slot>
       </div>
       <slot name="after-content"></slot>
       <slot name="end"></slot>
-      <div id="empty_text" data-value="${this.emptyText || '' }"></div>
-      <div id="error_text" data-value="${this.error && this.errorText || "Couldn't find anything for that" }"></div>
+      ${this.emptyText ? html`<div id="empty_text" data-value="${this.emptyText || '' }"></div>` : ''}
+      ${this.error ? html`<div id="error_text" data-value="${this.error && this.errorText || "Couldn't find anything for that" }"></div>` : ''}
     `;
   }
 }
