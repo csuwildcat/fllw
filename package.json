@@ -28,7 +28,7 @@
     "@lit/context": "^1.1.0",
     "@shoelace-style/shoelace": "2.15.0",
     "@tailwindcss/typography": "^0.5.9",
-    "@tbd54566975/dap": "^0.0.2",
+    "@tbd54566975/dap": "^0.0.4",
     "@vaadin/app-layout": "24.4.0-alpha12",
     "@vaadin/combo-box": "24.4.0-alpha12",
     "@vaadin/date-picker": "24.4.0-alpha12",

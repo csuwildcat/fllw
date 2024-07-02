@@ -1,7 +1,6 @@
-// TODO: use the @tbdNUMBERS/dap package... I'm not sure why 
-// I'm getting a polyfill error on 'createRequire' from 'node:module'
-// maybe a bun thing... To be reviewed with Frank...
-import { Dap } from "./dap/dap";
+import { DidDht, DidJwk, DidWeb, UniversalResolver } from '@web5/dids';
+
+import { Dap } from "@tbd54566975/dap";
 
 export const lookupDidFromPaytag = (paytag: string) => {
     // try to resolve the standard paytags first
@@ -33,7 +32,49 @@ const standardPaytagsToDap = (paytag: string) => {
 
 const getDidFromDap = async (dapStr: string) => {
     console.info('>>> dapStr', dapStr);
-    const dap = Dap.parse(dapStr);
+
+    const dap: Dap = Dap.parse(dapStr);
     console.info('>>> dap', dap);
-    return dap.getDid();
+
+    const registryUrl = await getDapRegistryUrl(dap);
+
+    const dapUrl = `${'http://localhost:3001/daps' // TODO: remove! just a hackweek temp
+        || registryUrl}/${dap.handle}`;
+
+    // fetch dap url
+    try {
+        const response = await fetch(dapUrl);
+        const dap = await response.json();
+        console.info('>>> dap', dap);
+        return dap.did
+    } catch (error) {
+        console.error('>>> fail to resolve dap error', error);
+        throw error;
+    }
+}
+
+export const DidResolver = new UniversalResolver({
+    didResolvers: [DidDht, DidJwk, DidWeb]
+})
+
+const getDapRegistryUrl = async (dap: Dap): Promise<string> => {
+    const webDid = `did:web:${dap.domain}`;
+
+    const didDoc = await DidResolver.resolve(webDid);
+
+    console.info('>>> didDoc', didDoc);
+
+    const dapService = didDoc.didDocument.service.find(s => s.id === 'DAPRegistry');
+
+    if (!dapService) {
+        throw new Error('DID has no DAP Registry service');
+    }
+
+    console.info('>>> dapService', dapService);
+
+    const registryUrl = dapService.serviceEndpoint;
+
+    console.info('>>> registryUrl', registryUrl);
+
+    return registryUrl[0]
 }
