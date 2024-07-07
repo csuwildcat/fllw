@@ -714,6 +714,9 @@ export class ProfileView extends LitElement {
       const formData = new FormData(this.credentialForm);
       for (const entry of formData.entries()) {
         natives.deepSet(this.credentialData, entry[0], entry[1] || undefined);
+        if(this.credentialData.reverify){
+          this.credentialData.verified_name = null;
+        }
       }
       await this.saveCredentials();
     }
@@ -877,9 +880,7 @@ export class ProfileView extends LitElement {
               
               ${!this.credentialData.reverify && this.credentialData.verified_name 
                 ? html`<small style="font-size:small" >&nbsp;&nbsp; Verified as ${this.credentialData.verified_name} </small>` 
-                : html`<sl-button class="edit-button" size="small" @click="${e => this.getVerified()}">
-                  Get Verified
-                </sl-button>`
+                : nothing
               }
               &nbsp;
               <sl-tooltip content="Scan this user's DID">
@@ -894,6 +895,7 @@ export class ProfileView extends LitElement {
       <sl-tab-group id="tabs" flex="fill" @sl-tab-show="${this.onTabShow}">
         <sl-tab slot="nav" panel="profile" ?active="${this.panel === 'profile' || nothing}">Profile</sl-tab>
         <sl-tab slot="nav" panel="stories" ?active="${this.panel === 'stories' || nothing}">Stories</sl-tab>
+        <sl-tab slot="nav" panel="identity" ?active="${this.panel === 'identity' || nothing}">Identity</sl-tab>
         <!-- <sl-tab slot="nav" panel="threads" ?active="${this.panel === 'threads' || nothing}">Threads</sl-tab> -->
         ${ !this.owner ? nothing : html`
           <sl-tab slot="nav" panel="notifications" ?active="${this.panel === 'notifications' || nothing}">Notifications</sl-tab>
@@ -991,6 +993,64 @@ export class ProfileView extends LitElement {
           </div>
         </sl-tab-panel>
 
+        <sl-tab-panel id="identity_panel" name="identity" ?active="${this.panel === 'identity' || nothing}">
+          <div default-content="placeholder">
+            <small><sl-badge variant="${this.credentialData.verified_name ? 'warning' : 'primary'}" pill>✔</sl-badge></small>
+            <small>
+              <sl-badge variant="" pill>
+                <sl-badge variant="${this.credentialData.verified_name ? 'warning' : 'primary'}" pill>
+                  ${this.credentialData.verified_name ? 'Real name' : 'Not a bot'}
+                  </sl-badge>
+                <span style="display:block; width:10rem;"></span> ${this.credentialData.verified_name ? 2 : 1}/3
+              </sl-badge>
+            </small>
+            <small style="color: grey">${this.credentialData.verified_name ? 'Your real name has been verified.' :  'You have been veified to be not a bot.' }</small>
+            <h5>Orange me has 3 levels of verification.</h5>
+            <small style="margin-bottom: 0.5rem">
+              <small><sl-badge variant="primary" pill pulse>✔</sl-badge></small> &nbsp;
+              <small><sl-badge variant="${this.credentialData.verified_name ? 'warning' : ''}" style="margin-left: 2.5rem" pill pulse>✔</sl-badge></small> &nbsp;
+              <small><sl-badge variant="" style="margin-left: 2.5rem" pill pulse>✔</sl-badge></small>
+            </small>
+            <sup>
+              <a><sl-badge variant="primary" pill>Not-a-bot</sl-badge></a> >
+              <a><sl-badge variant="${this.credentialData.verified_name ? 'warning' : ''}" pill>Real name</sl-badge></a> >
+              <a><sl-badge variant="" pill>Celebrity</sl-badge></a>
+            </sup>
+            <br/> 
+            <br/> 
+            <sl-radio-group style="width: 60%;" label="" name="a" value="2">
+              <sl-radio value="1" disabled>Not-a-bot
+                <br/> 
+                <small style="color: grey">
+                  Not-a-bot lets you prove you are not a bot but a real human being
+                </small>
+              </sl-radio>
+              <br/> 
+              <sl-radio value="2" disabled>Real Name
+                <br/> 
+                <small style="color: grey" >
+                  Real name verification lets you prove your display name matches your real name
+                </small>
+              </sl-radio>
+              <br/> 
+              <sl-radio value="3" disabled>Celebrity 
+                <br/> 
+                <small style="color: grey">
+                  Celebrity verification allows you to be the recognized celebrity that goes by display name
+                </small>
+              </sl-radio>
+            </sl-radio-group>
+            <br/> 
+            <br/> 
+            ${!this.credentialData.reverify && this.credentialData.verified_name
+              ? html`<sl-button variant="default" size="small" circle>
+                  <sl-icon name="chevron-down" label="Settings" @click="${e => this.credentialEditModal.show()}"></sl-icon>
+                </sl-button>`
+              : html`<sl-button @click="${e => this.getVerified()}" variant="danger" style="width: 50%; margin-bottom: 1rem;" pill>Continue</sl-button>` 
+            }
+          </div>
+        </sl-tab-panel>
+
         <sl-tab-panel id="threads_panel" name="threads" ?active="${this.panel === 'threads' || nothing}">
           <ul id="threads_list"></ul>
           <div default-content="placeholder">
@@ -1049,18 +1109,15 @@ export class ProfileView extends LitElement {
             </sl-tab-panel>
           </sl-tab-group>
         </form>
-
-        <sl-button class="edit-button" size="small" @click="${e => this.credentialEditModal.show()}">
-          Verifiable Credential - Config
-        </sl-button>
         <sl-button slot="footer" variant="primary" @click="${ e => this.profileEditModal.hide() }">Submit</sl-button>
       </sl-dialog> 
 
       <sl-dialog id="credential_edit_modal" class="page-dialog" label="Config Verifiable Credential" placement="start">
-        <small>Get an account from <a href="https://sophtron.com/account/register" target="_blank">Sophtron</a> if you don't have already.</small>
+
+        <small>This input is for demo purpose, to revoke the results and start over</small>
         <form id="credential_form" @sl-change="${e => this.saveCredentialInfo(e)}" @submit="${e => e.preventDefault()}">
           <br/>
-          <sl-input name="reverify" value="${this.credentialData.reverify}" label="Reverify option" help-text="Choose to start over from - 'ucw'(re-connect bank), 'vc'(Retrieve VC), 'verify'(Verify VC)"></sl-input>
+          <sl-input name="reverify" value="${this.credentialData.reverify}" label="Reverify option" help-text="Choose to start over from - 'ucw' (re-connect bank), 'vc' (Retrieve VC), 'verify' (Verify VC)"></sl-input>
         </form>
         <sl-button slot="footer" variant="primary" @click="${ e => this.credentialEditModal.hide() }">Submit</sl-button>
       </sl-dialog> 

@@ -47,7 +47,8 @@ export const AppContextMixin = (BaseClass) => class extends BaseClass {
   async getIdentity(_did, loadProfile){
     const { web5, did } = await Web5.connect({
       techPreview: {
-        dwnEndpoints: ['http://localhost:3000']
+        // dwnEndpoints: ['http://localhost:3000'],
+        dwnEndpoints: ['https://dwn.sophtron-prod.com']
       }
     });
     console.log(did);

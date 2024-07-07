@@ -1,6 +1,6 @@
 
-const sophtronDWNServer = 'http://localhost:8083/api'
-// const sophtronDWNServer = 'https://dwn.sophtron-prod.com/api'
+// const sophtronDWNServer = 'http://localhost:8083/api'
+const sophtronDWNServer = 'https://sph-dwn.sophtron-prod.com/api'
 
 async function getSophtronAuthCode(did, auth){
   const rawResponse = await fetch( `${sophtronDWNServer}/did/${encodeURIComponent(did)}/ucw`, {
@@ -70,19 +70,19 @@ async function onFinish(e){
 }
 
 let testEvent = null;
-testEvent = {
-    "_type": "onFinish",
-    "event": "vcs/connect/memberConnected",
-    "type": "message",
-    "connection_id": "78c901b1-8563-435c-bc79-2cdfa3ee02ad",
-    "data": {
-        "session_guid": "",
-        "user_guid": "f16e771d-ada4-434b-aedf-fa816711f292",
-        "member_guid": "78c901b1-8563-435c-bc79-2cdfa3ee02ad",
-        "provider": "sophtron",
-        "id": "78c901b1-8563-435c-bc79-2cdfa3ee02ad"
-    }
-}
+// testEvent = {
+//     "_type": "onFinish",
+//     "event": "vcs/connect/memberConnected",
+//     "type": "message",
+//     "connection_id": "78c901b1-8563-435c-bc79-2cdfa3ee02ad",
+//     "data": {
+//         "session_guid": "",
+//         "user_guid": "f16e771d-ada4-434b-aedf-fa816711f292",
+//         "member_guid": "78c901b1-8563-435c-bc79-2cdfa3ee02ad",
+//         "provider": "sophtron",
+//         "id": "78c901b1-8563-435c-bc79-2cdfa3ee02ad"
+//     }
+// }
 
 export async function show(did, auth, onWcwFinished){
   ucwCallback = onWcwFinished;

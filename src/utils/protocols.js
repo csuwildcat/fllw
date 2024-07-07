@@ -20,9 +20,6 @@ const credentialDefinition = {
     providerData: {
       dataFormats: ["application/json"]
     },
-    providerConfig: {
-      dataFormats: ["application/json"]
-    },
     raw_vc: {
       dataFormats: ["application/json", "text/plain"]
     },
@@ -33,15 +30,6 @@ const credentialDefinition = {
   structure: {
     reverify: {},
     verified_name: {},
-    providerConfig: {
-      $actions: [
-        {
-          who: 'author',
-          of: 'credential',
-          can: ['read', 'create', 'update', 'delete']
-        }
-      ]
-    },
     providerData: {
       $actions: [
         {
