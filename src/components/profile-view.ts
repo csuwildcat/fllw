@@ -11,13 +11,14 @@ import { DOM, notify, natives } from '../utils/helpers.js';
 import Follows from '../utils/follows.js'
 import { render } from '../utils/markdown.js';
 import './global.js'
-
+import { show as ucw_show, getVC, verifyVc} from '../utils/ucw.js'
 import PageStyles from '../styles/page.css' assert { type: 'css' };
 
 import './w5-img'
 import './detail-box'
 import './story-list';
 import './invite-item';
+import { Protocol } from '@web5/api';
 
 @customElement('profile-view')
 export class ProfileView extends LitElement {
@@ -490,6 +491,9 @@ export class ProfileView extends LitElement {
   @query('#profile_form', true)
   profileForm;
 
+  @query('#credential_form', true)
+  credentialForm;
+
   @query('#job_modal', true)
   jobModal;
 
@@ -514,7 +518,13 @@ export class ProfileView extends LitElement {
   @query('#profile_edit_modal', true)
   profileEditModal;
 
+  @query('#credential_edit_modal', true)
+  credentialEditModal;
+
   static properties = {
+    credential: {
+      type: Object
+    },
     job: {
       type: Object
     },
@@ -527,11 +537,15 @@ export class ProfileView extends LitElement {
     socialData: {
       type: Object
     },
+    credentialData: {
+      type: Object
+    },
     careerData: {
       type: Object
     }
   }
 
+  credential: any;
   avatar: any;
   hero: any;
   social: any;
@@ -539,6 +553,7 @@ export class ProfileView extends LitElement {
   follows: Follows;
   following: any;
   socialData: any;
+  credentialData: any;
   careerData: any;
 
   static paymentTypes = {
@@ -580,6 +595,7 @@ export class ProfileView extends LitElement {
   }
 
   clearData(){
+    this.credential = {};
     this.avatar = {};
     this.hero = {};
     this.social = {};
@@ -591,6 +607,7 @@ export class ProfileView extends LitElement {
       apps: {},
       payment: {}
     }
+    this.credentialData = {};
     this.careerData = {
       jobs: [],
       skills: [],
@@ -622,6 +639,7 @@ export class ProfileView extends LitElement {
         this.avatar = this.context.avatar;
         this.hero = this.context.hero;
         this.career = this.context.career;
+        this.credential = this.context.credential;
       }
       else {
         this.checkFollow();
@@ -630,11 +648,13 @@ export class ProfileView extends LitElement {
           datastore.readProfileImage('avatar', { from: did }),
           datastore.readProfileImage('hero', { from: did }),
           datastore.getCareer({ from: did }),
+          datastore.getCredential({ from: did }),
         ])
         this.social = records[0];
         this.avatar = records[1];
         this.hero = records[2];
         this.career = records[3];
+        this.credential = records[4];
       }
       this.socialData = this.social?.cache?.json || {
         displayName: '',
@@ -646,6 +666,7 @@ export class ProfileView extends LitElement {
         skills: [],
         education: []
       };
+      this.credentialData = this.credential?.cache?.json || {};
       this.loadingError = false;
       this.loaded = true;
       DOM.fireEvent(this, 'profile-view-load-success')
@@ -704,6 +725,71 @@ export class ProfileView extends LitElement {
         notify.error('There was a problem saving your profile info')
       }
     }
+  }
+
+  async saveCredentialInfo(e){
+    if (this.social) {
+      const formData = new FormData(this.credentialForm);
+      for (const entry of formData.entries()) {
+        natives.deepSet(this.credentialData, entry[0], entry[1] || undefined);
+        if(this.credentialData.reverify){
+          this.credentialData.verified_name = null;
+        }
+      }
+      await this.saveCredentials();
+    }
+  }
+
+  async saveCredentials(){
+    console.log('saveCredentials')
+    try{
+      await this.context.initialize;
+      if (this.did === this.context.did) {
+        const cre = await this.context.instance.setCredential(this.credentialData);
+        var { status } = await cre.send(this.did);
+      }
+      else {
+        const cre = await this.credential.setCredential(this.credentialData);
+        var { status } = await cre.send(this.did);
+      }
+      notify.success('Your credential info was saved')
+    }
+    catch(e) {
+      console.log(e)
+      notify.error('There was a problem saving your credential info')
+    }
+  }
+  async getVerified(){
+    console.log('getVerified')
+    this.credentialData.verified_name = null;
+    const {record} = await datastore.createProtocolRecord('profile', 'credential', {store: false})
+    if(!this.credentialData.providerData || this.credentialData.reverify === 'ucw'){
+      this.credentialData.raw_vc = null
+      this.credentialData.providerData = null;
+      ucw_show(this.context.did, record.authorization, async (providerData) => {
+        console.log('ucw_show_callback')
+        this.credentialData.providerData = providerData;
+        this.credentialData.raw_vc = await getVC(this.context.did, record.authorization, providerData.connection_id);
+        this.credentialData.verified_name = await verifyVc(this.context.did, record.authorization, this.credentialData.raw_vc);
+        this.credentialData.reverify = null;
+        await this.saveCredentials();
+      });
+      return;
+    }else{
+      console.log(this.credentialData.providerData)
+    }
+    if(this.credentialData.providerData && (!this.credentialData.raw_vc || this.credentialData.reverify === 'vc')){
+      this.credentialData.raw_vc = await getVC(this.context.did, record.authorization, this.credentialData.providerData.connection_id);
+      this.credentialData.reverify = null;
+    }else{
+      console.log(this.credentialData.raw_vc)
+    }
+    if(this.credentialData.raw_vc){
+      this.credentialData.verified_name = await verifyVc(this.context.did, record.authorization, this.credentialData.raw_vc);
+      this.credentialData.reverify = null;
+      await this.saveCredentials();
+    }
+    console.log(this.credentialData.verified_name)
   }
 
   showJobModal(job){
@@ -805,8 +891,16 @@ export class ProfileView extends LitElement {
           </div>
           <div id="profile_name">
             <h2>
+              
+              <sl-copy-button value="${this.did}" copy-label="Copy this user's DID"> 
+              </sl-copy-button> 
               ${this.socialData.displayName || 'Anon'} 
-              <sl-copy-button value="${this.did}" copy-label="Copy this user's DID"></sl-copy-button>
+              
+              ${!this.credentialData.reverify && this.credentialData.verified_name 
+                ? html`<small style="font-size:small" >&nbsp;&nbsp; Verified as ${this.credentialData.verified_name} </small>` 
+                : nothing
+              }
+              &nbsp;
               <sl-tooltip content="Scan this user's DID">
                 <sl-icon-button class="qr_button" name="simple-qr" size="small" @click="${ e => this.showQrModal("Scan this user's DID", this.did) }"></sl-icon-button>
               </sl-tooltip>
@@ -819,6 +913,7 @@ export class ProfileView extends LitElement {
       <sl-tab-group id="tabs" flex="fill" @sl-tab-show="${this.onTabShow}">
         <sl-tab slot="nav" panel="profile" ?active="${this.panel === 'profile' || nothing}">Profile</sl-tab>
         <sl-tab slot="nav" panel="stories" ?active="${this.panel === 'stories' || nothing}">Stories</sl-tab>
+        <sl-tab slot="nav" panel="identity" ?active="${this.panel === 'identity' || nothing}">Identity</sl-tab>
         <!-- <sl-tab slot="nav" panel="threads" ?active="${this.panel === 'threads' || nothing}">Threads</sl-tab> -->
         <sl-tab slot="nav" panel="follows" ?active="${this.panel === 'follows' || nothing}">Follows</sl-tab>
         ${ !this.owner ? nothing : html`
@@ -917,6 +1012,64 @@ export class ProfileView extends LitElement {
           </div>
         </sl-tab-panel>
 
+        <sl-tab-panel id="identity_panel" name="identity" ?active="${this.panel === 'identity' || nothing}">
+          <div default-content="placeholder">
+            <small><sl-badge variant="${this.credentialData.verified_name ? 'warning' : 'primary'}" pill>✔</sl-badge></small>
+            <small>
+              <sl-badge variant="" pill>
+                <sl-badge variant="${this.credentialData.verified_name ? 'warning' : 'primary'}" pill>
+                  ${this.credentialData.verified_name ? 'Real name' : 'Not a bot'}
+                  </sl-badge>
+                <span style="display:block; width:10rem;"></span> ${this.credentialData.verified_name ? 2 : 1}/3
+              </sl-badge>
+            </small>
+            <small style="color: grey">${this.credentialData.verified_name ? 'Your real name has been verified.' :  'You have been veified to be not a bot.' }</small>
+            <h5>Orange me has 3 levels of verification.</h5>
+            <small style="margin-bottom: 0.5rem">
+              <small><sl-badge variant="primary" pill pulse>✔</sl-badge></small> &nbsp;
+              <small><sl-badge variant="${this.credentialData.verified_name ? 'warning' : ''}" style="margin-left: 2.5rem" pill pulse>✔</sl-badge></small> &nbsp;
+              <small><sl-badge variant="" style="margin-left: 2.5rem" pill pulse>✔</sl-badge></small>
+            </small>
+            <sup>
+              <a><sl-badge variant="primary" pill>Not-a-bot</sl-badge></a> >
+              <a><sl-badge variant="${this.credentialData.verified_name ? 'warning' : ''}" pill>Real name</sl-badge></a> >
+              <a><sl-badge variant="" pill>Celebrity</sl-badge></a>
+            </sup>
+            <br/> 
+            <br/> 
+            <sl-radio-group style="width: 60%;" label="" name="a" value="2">
+              <sl-radio value="1" disabled>Not-a-bot
+                <br/> 
+                <small style="color: grey">
+                  Not-a-bot lets you prove you are not a bot but a real human being
+                </small>
+              </sl-radio>
+              <br/> 
+              <sl-radio value="2" disabled>Real Name
+                <br/> 
+                <small style="color: grey" >
+                  Real name verification lets you prove your display name matches your real name
+                </small>
+              </sl-radio>
+              <br/> 
+              <sl-radio value="3" disabled>Celebrity 
+                <br/> 
+                <small style="color: grey">
+                  Celebrity verification allows you to be the recognized celebrity that goes by display name
+                </small>
+              </sl-radio>
+            </sl-radio-group>
+            <br/> 
+            <br/> 
+            ${!this.credentialData.reverify && this.credentialData.verified_name
+              ? html`<sl-button variant="default" size="small" circle>
+                  <sl-icon name="chevron-down" label="Settings" @click="${e => this.credentialEditModal.show()}"></sl-icon>
+                </sl-button>`
+              : html`<sl-button @click="${e => this.getVerified()}" variant="danger" style="width: 50%; margin-bottom: 1rem;" pill>Continue</sl-button>` 
+            }
+          </div>
+        </sl-tab-panel>
+
         <sl-tab-panel id="threads_panel" name="threads" ?active="${this.panel === 'threads' || nothing}">
           <ul id="threads_list"></ul>
           <div default-content="placeholder">
@@ -991,6 +1144,16 @@ export class ProfileView extends LitElement {
         </form>
         <sl-button slot="footer" variant="primary" @click="${ e => this.profileEditModal.hide() }">Submit</sl-button>
       </sl-dialog> 
+
+      <sl-dialog id="credential_edit_modal" class="page-dialog" label="Config Verifiable Credential" placement="start">
+
+        <small>This input is for demo purpose, to revoke the results and start over</small>
+        <form id="credential_form" @sl-change="${e => this.saveCredentialInfo(e)}" @submit="${e => e.preventDefault()}">
+          <br/>
+          <sl-input name="reverify" value="${this.credentialData.reverify}" label="Reverify option" help-text="Choose to start over from - 'ucw' (re-connect bank), 'vc' (Retrieve VC), 'verify' (Verify VC)"></sl-input>
+        </form>
+        <sl-button slot="footer" variant="primary" @click="${ e => this.credentialEditModal.hide() }">Submit</sl-button>
+      </sl-dialog> 
       
       <sl-dialog id="job_modal" class="page-dialog dialog-deny-close" label="Edit Job" placement="start">
         <form id="job_form" @submit="${e => { e.preventDefault(); this.saveJob() }}">   
@@ -1036,5 +1199,4 @@ export class ProfileView extends LitElement {
       </sl-dialog> 
     `
   }
-
 }

@@ -10,6 +10,65 @@ function addSchemas(config) {
   }, {})
 }
 
+const credentialDefinition = {
+  published: true,
+  protocol: 'https://areweweb5yet.com/protocols/credential',
+  types: {
+    reverify: {
+      dataFormats: ["application/json", "text/plain"]
+    },
+    providerData: {
+      dataFormats: ["application/json"]
+    },
+    raw_vc: {
+      dataFormats: ["application/json", "text/plain"]
+    },
+    verified_name: {
+      dataFormats: ["application/json", "text/plain"]
+    }
+  },
+  structure: {
+    reverify: {},
+    verified_name: {},
+    providerData: {
+      $actions: [
+        {
+          who: 'author',
+          of: 'credential',
+          can: ['read', 'create', 'update', 'delete']
+        }
+      ]
+    },
+    raw_vc: {
+      $actions: [
+        {
+          who: 'author',
+          of: 'credential',
+          can: ['read', 'create', 'update', 'delete']
+        },
+        {
+          who: 'anyone',
+          of: 'credential',
+          can: ['read']
+        }
+      ]
+    },
+    verified_name: {
+      $actions: [
+        {
+          who: 'author',
+          of: 'credential',
+          can: ['read', 'create', 'update', 'delete']
+        },
+        {
+          who: 'anyone',
+          of: 'credential',
+          can: ['read']
+        }
+      ]
+    }
+  }
+}
 
 const socialDefinition = {
   published: true,
@@ -118,6 +177,9 @@ const profileDefinition = {
     name: {
       dataFormats: ['application/json']
     },
+    credential: {
+      dataFormats: ['application/json']
+    },
     social: {
       dataFormats: ['application/json']
     },
@@ -145,6 +207,7 @@ const profileDefinition = {
   },
   structure: {
     name: {},
+    credential: {},
     social: {},
     career: {},
     avatar: {},
@@ -173,4 +236,10 @@ export const social = {
 export const byUri = {
   [profileDefinition.protocol]: profile,
   [socialDefinition.protocol]: social,
+}
+
+export const credential = {
+  uri: credentialDefinition.protocol,
+  schemas: addSchemas(credentialDefinition),
+  definition: credentialDefinition
 }
