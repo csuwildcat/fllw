@@ -8,7 +8,7 @@ import { setAnimation } from '@shoelace-style/shoelace/dist/utilities/animation-
 import { AppRouter } from './components/router';
 import * as protocols from './utils/protocols';
 
-import { activatePolyfills } from './utils/web-features.js';
+import { activatePolyfills } from '@web5/api';
 
 import './styles/global.css';
 import './components/global.js';
@@ -23,13 +23,10 @@ import '@vaadin/app-layout/theme/lumo/vaadin-drawer-toggle.js';
 
 import './pages/home';
 import './pages/directory.js';
-import './pages/follows.js';
 import './pages/settings.js';
 import './pages/profile.js';
 import './pages/story.js';
 import './pages/stories.js';
-
-// const BASE_URL: string = (import.meta.env.BASE_URL).length > 2 ? (import.meta.env.BASE_URL).slice(1, -1) : (import.meta.env.BASE_URL);
 
 activatePolyfills();
 
@@ -190,9 +187,10 @@ export class AppContainer extends AppContextMixin(SpinnerMixin(LitElement)) {
         cursor: pointer;
       }
 
-      #global_nav a sl-icon {
+      #global_nav a sl-icon, #global_nav a sl-avatar {
+        --size: 1.5em;
         font-size: 1.5em;
-        margin: 0 0 0.1em;
+        margin: 0 0 0.2rem;
       }
 
       #global_nav a div {
@@ -502,10 +500,6 @@ export class AppContainer extends AppContextMixin(SpinnerMixin(LitElement)) {
           component: '#story'
         },
         {
-          path: '/follows',
-          component: '#follows',
-        },
-        {
           path: '/settings',
           component: '#settings'
         }
@@ -613,10 +607,20 @@ export class AppContainer extends AppContextMixin(SpinnerMixin(LitElement)) {
           <sl-icon slot="prefix" name="user-search"></sl-icon>
           <div>Lookup</div>
         </a>
-        <a href="/follows" ?active="${location.pathname.match('follows')}">
-          <sl-icon slot="prefix" name="people"></sl-icon>
-          <div>Follows</div>
-        </a>
+        ${this.context.connected ?
+          html`
+            <a href="/profiles/${this.context.did}" ?active="${location.pathname.match(`/profiles/${this.context.did}`)}">
+              <sl-avatar image="${this.context?.avatar?.cache?.uri}" label="User avatar"></sl-avatar>
+              <div>Profile</div>
+            </a>
+          ` :
+          html`
+            <a @click="${ e => this.connectModal.show() }">
+              <sl-icon slot="prefix" name="person"></sl-icon>
+              <div>Profile</div>
+            </a>
+          `
+        }
         <a href="/settings" ?active="${location.pathname.match('settings')}">
           <sl-icon slot="prefix" name="gear"></sl-icon>
           <div>Settings</div>
@@ -628,7 +632,6 @@ export class AppContainer extends AppContextMixin(SpinnerMixin(LitElement)) {
         <page-directory id="directory" scroll></page-directory>
         <page-stories id="stories" scroll></page-stories>   
         <page-story id="story" scroll></page-story>
-        <page-follows id="follows" scroll></page-follows>
         <page-settings id="settings" scroll></page-settings>
         <page-profile id="profile" did="${this.context.did || nothing}" scroll></page-profile>
       </main>

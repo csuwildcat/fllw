@@ -6,7 +6,7 @@ import { AppContext } from '../utils/context.js';
 import '../components/global.js'
 import '../components/markdown-editor.js'
 import PageStyles from '../styles/page.css' assert { type: 'css' };
-import * as follows from '../utils/follows.js';
+import * as follows from '../utils/follows';
 
 @customElement('page-posts')
 export class PagePosts extends LitElement {

@@ -5,6 +5,7 @@ import { AppContext } from '../utils/context.js';
 
 import '../components/global.js'
 import '../components/profile-card.js';
+import Follows from '../utils/follows.js'
 import PageStyles from '../styles/page.css' assert { type: 'css' };
 import { SpinnerMixin, SpinnerStyles } from '../utils/spinner.js';
 import config from '../config.json' assert { type: 'json' };
@@ -17,8 +18,6 @@ export class PageHome extends SpinnerMixin(LitElement) {
   context;
 
   #did = null;
-  #cursor = null;
-  follows = [];
 
   static styles = [
     PageStyles,
@@ -49,6 +48,16 @@ export class PageHome extends SpinnerMixin(LitElement) {
     `
   ]
 
+  async firstUpdated(){
+    this.startSpinner(null, { renderImmediate: true });
+    await this.context.initialize;
+    this.follows = Follows.getInstance();
+    await this.follows.initialize;
+    this.requestUpdate();
+    this.stopSpinner();
+    console.log(this.follows);
+  }
+
   // getPostsAfter(){
   //   console.log(follows.entries);
   // }
@@ -57,33 +66,11 @@ export class PageHome extends SpinnerMixin(LitElement) {
   //   console.log(follows.entries);
   // }
 
-  async updated(props){
-    if (props.has('context')) {
-      if (this.context.did) {
-        if (this.#did !== this.context.did) {
-          this.#did = this.context.did;
-          this.startSpinner(null, { renderImmediate: true });
-          await this.getFollows();
-          this.stopSpinner();
-        }
-      }
-      else {
-        
-      }
-    }
-  }
-
-  async getFollows(){
-    const { items, cursor } = await datastore.getFollows(this.follows, this.#cursor)
-    this.follows = items;
-    this.#cursor = cursor;
-  }
-
   render() {
-    const forceIntro = true;
+    const forceIntro = 0;
     if (!forceIntro && this.context.did) {  
-      if (this.follows?.length) {
-        return this.follows.map(follow => {
+      if (this.follows?.entries?.length) {
+        return this.follows.entries.map(follow => {
           return html`${follow.recipient}`
         })
       }

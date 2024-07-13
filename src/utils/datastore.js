@@ -395,20 +395,12 @@ class Datastore {
 
   queryFollows = (options = {}) => this.queryProtocolRecords('social', 'follow', options)
 
-  async getFollows(items = [], cursor, _options = {}){
-    const options = Object.assign({
-      pagination: {
-        limit: 10,
-      }
-    }, _options);
+  async getFollows(cursor, options = {}){
     if (cursor) {
+      options.pagination = options.pagination || {};
       options.pagination.cursor = cursor;
     }
-    var { cursor, records } = await this.queryProtocolRecords('social', 'follow', options)
-    if (records.length) {
-      items.push(...records);
-    }
-    return { items, cursor }
+    return this.queryProtocolRecords('social', 'follow', options)
   }
 
   async toggleFollow(did, follow){

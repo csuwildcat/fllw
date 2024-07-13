@@ -1,4 +1,4 @@
-import { LitElement, html, css, unsafeCSS } from 'lit';
+import { LitElement, html, css, nothing } from 'lit';
 import { customElement, query, property } from 'lit/decorators.js';
 import { consume } from '@lit/context';
 import { AppContext } from '../utils/context.js';
@@ -6,6 +6,7 @@ import { AppContext } from '../utils/context.js';
 import PageStyles from '../styles/page.css' assert { type: 'css' };
 
 import { DOM, notify, natives } from '../utils/helpers.js';
+import Follows from '../utils/follows.js'
 import '../components/profile-card'
 
 @customElement('page-follows')
@@ -58,37 +59,11 @@ export class PageFollows extends LitElement {
   @query('#results', true)
   results;
 
-  @property({ type: Array })
-  entries = [];
-
-  @property({ type: Object })
-  cursor = null;
-
-
-  constructor() {
-    super();
-    // follows.initialize().then(() => {
-    //   this.requestUpdate()
-    // });
-  }
-
   async firstUpdated(){
     await this.context.initialize;
-    // document.addEventListener('follow-change', e => {
-    //   const did = e.detail.did;
-    //   const state = e.detail.following;
-    //   if (did === this.profileModalDid) {
-    //     this.profileModalExistingFollow = state;
-    //     this.requestUpdate();
-    //   }
-    // })
-    this.getFollows();
-  }
-
-  async getFollows(){
-    const { cursor } = await datastore.getFollows(this.entries, this.cursor);
-    this.cursor = cursor;
-    console.log(this.entries);
+    this.follows = Follows.getInstance();
+    await this.follows.initialize;
+    this.requestUpdate();
   }
 
   search(value){
@@ -111,11 +86,11 @@ export class PageFollows extends LitElement {
       </header>
       <section>
         <div id="results">${
-          Array.from(this.entries).map(record => html`
+          this?.follows?.entries ? Array.from(this.follows.entries).map(record => html`
             <profile-card did="${record.recipient}" remove-unfollowed follow-button following @click="${e => {
               router.navigateTo(`/profiles/${record.recipient}`)
             }}"></profile-card>
-          `)
+          `) : nothing
         }</div>
       </section>
     `;

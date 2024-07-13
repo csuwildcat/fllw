@@ -20,6 +20,7 @@ async function getDwnEndpoints(did) {
 }
 
 async function handleEvent(event, did, path, options){
+  console.log(path)
   const drl = event.request.url.replace(httpToHttpsRegex, 'https:').replace(trailingSlashRegex, '');
   const responseCache = await caches.open('drl');
   const cachedResponse = await responseCache.match(drl);
@@ -55,6 +56,7 @@ async function handleEvent(event, did, path, options){
 }
 
 async function fetchResource(event, did, drl, path, responseCache, options) {
+  console.log(options);
   const endpoints = await getDwnEndpoints(did);
   if (!endpoints?.length) {
     throw new Response('DWeb Node resolution failed: no valid endpoints found.', { status: 530 })
@@ -62,6 +64,7 @@ async function fetchResource(event, did, drl, path, responseCache, options) {
   for (const endpoint of endpoints) {
     try {
       const url = `${endpoint.replace(trailingSlashRegex, '')}/${did}/${path}`;
+      console.log(endpoints, url);
       const response = await fetch(url, { headers: event.request.headers });     
       if (response.ok) { 
         const match = await options?.onCacheCheck(event, drl);

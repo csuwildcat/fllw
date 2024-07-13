@@ -30,6 +30,6 @@
       "vite-plugin-import-css-sheet/client"
     ]
   },
-  "include": ["src/**/*.ts", "src/pages/home.js", "src/utils/context.js", "src/utils/helpers.js", "public/sw.ts", "src/utils/web-features.ts"],
+  "include": ["src/**/*.ts", "src/pages/home.js", "src/utils/context.js", "src/utils/helpers.js", "public/sw.ts", "src/utils/web-features.ts", "src/utils/follows.js"],
   "exclude": ["node_modules"]
 }

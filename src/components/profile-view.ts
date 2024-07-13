@@ -8,6 +8,7 @@ import { AppContext } from '../utils/context.js';
 import { hashToGradient } from '../utils/colors.js';
 import { socialApps, storyUtils } from '../utils/content.js';
 import { DOM, notify, natives } from '../utils/helpers.js';
+import Follows from '../utils/follows.js'
 import { render } from '../utils/markdown.js';
 import './global.js'
 
@@ -354,6 +355,20 @@ export class ProfileView extends LitElement {
         display: inline-block;
       }
 
+      /* Follows */
+
+      #follow_list {
+        margin: 1.2rem 1rem;
+      }
+
+      #follow_list ~ [default-content="placeholder"] {
+        display: flex;
+      }
+
+      #follow_list:has(*) ~ [default-content="placeholder"] {
+        display: none;
+      }
+
       .label-on-left {
         --label-width: 5.5rem;
         --gap-width: 1rem;
@@ -439,6 +454,10 @@ export class ProfileView extends LitElement {
         #hero::after {
           display: none;
         }
+
+        #follow_list {
+          margin: 0.3rem 0.2rem;
+        }
       }
 
     `
@@ -517,6 +536,7 @@ export class ProfileView extends LitElement {
   hero: any;
   social: any;
   career: any;
+  follows: Follows;
   following: any;
   socialData: any;
   careerData: any;
@@ -594,8 +614,9 @@ export class ProfileView extends LitElement {
       await this.context.initialize;
       this.owner = did === this.context.did;
       this.clearData();
-      this.checkFollow();
       this.heroImage.style.setProperty('--deterministic-background', hashToGradient(did.split(':')[2]));
+      this.follows = Follows.getInstance(this.owner ? null : { from: did, pagination: { limit: 20 } });
+      this.follows.initialize.then(() => this.requestUpdate());
       if (this.owner) {
         this.social = this.context.social;
         this.avatar = this.context.avatar;
@@ -603,7 +624,7 @@ export class ProfileView extends LitElement {
         this.career = this.context.career;
       }
       else {
-        
+        this.checkFollow();
         const records = await Promise.all([
           datastore.getSocial({ from: did }),
           datastore.readProfileImage('avatar', { from: did }),
@@ -638,16 +659,13 @@ export class ProfileView extends LitElement {
   }
 
   async checkFollow(){
-    const response = await datastore.queryFollows({
-      recipient: this.did
-    })
-    this.following = !!response.records[0];
+    this.following = await Follows.checkFollow(this.did);
     this.requestUpdate();
   }
 
   async toggleFollow(){
-    const record = await datastore.toggleFollow(this.did);
-    this.following = !!record;
+    const state = await this.follows.toggleFollow(this.did);
+    this.following = state;
     this.requestUpdate();
   }
 
@@ -802,6 +820,7 @@ export class ProfileView extends LitElement {
         <sl-tab slot="nav" panel="profile" ?active="${this.panel === 'profile' || nothing}">Profile</sl-tab>
         <sl-tab slot="nav" panel="stories" ?active="${this.panel === 'stories' || nothing}">Stories</sl-tab>
         <!-- <sl-tab slot="nav" panel="threads" ?active="${this.panel === 'threads' || nothing}">Threads</sl-tab> -->
+        <sl-tab slot="nav" panel="follows" ?active="${this.panel === 'follows' || nothing}">Follows</sl-tab>
         ${ !this.owner ? nothing : html`
           <sl-tab slot="nav" panel="notifications" ?active="${this.panel === 'notifications' || nothing}">Notifications</sl-tab>
         `}
@@ -912,6 +931,20 @@ export class ProfileView extends LitElement {
                 <p>Nothing to see here yet.</p>
               `
             }
+          </div>
+        </sl-tab-panel>
+
+        <sl-tab-panel id="follows_panel" name="follows" ?active="${this.panel === 'follows' || nothing}">
+          <div id="follow_list">${
+            this?.follows?.entries ? Array.from(this?.follows?.entries).map(record => html`
+              <profile-card did="${record.recipient}" remove-unfollowed follow-button following @click="${e => {
+                router.navigateTo(`/profiles/${record.recipient}`)
+              }}"></profile-card>
+            `) : nothing
+          }</div>
+          <div default-content="placeholder">
+            <sl-icon name="people-fill"></sl-icon>
+            <span>Not following anyone yet.</span>
           </div>
         </sl-tab-panel> 
 

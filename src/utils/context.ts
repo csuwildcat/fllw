@@ -2,7 +2,6 @@ import { createContext, provide } from '@lit/context';
 
 import { Web5 } from '@web5/api';
 import { Datastore } from './datastore.js';
-import * as follows from './follows.js';
 
 const initialState = {
   instance: null,

@@ -1,5 +1,5 @@
 
-import { activatePolyfills } from '/src/utils/web-features.ts';
+import { activatePolyfills } from '@web5/api';
 
 activatePolyfills({
   onCacheCheck(event, route){

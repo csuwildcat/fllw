@@ -1,59 +1,58 @@
 
+import { notify } from './helpers.js';
 
-import { ProfileCard } from '../components/profile-card';
-import { DOM, notify } from '../utils/helpers.js';
-
-let entries = new Set();
-
-function initialize(){
-  return initialize.promise || (initialize.promise = new Promise(async resolve => {
-    await fetch();
-    resolve();
-  }))
+async function getFollow(did, options) {
+  const response = await datastore.queryFollows(Object.assign({
+    recipient: did
+  }, options || {}))
+  return response.records[0];
 }
 
-async function fetch (cursor){
-  const records = await datastore.queryFollows();
-  records.forEach(record => record.isDeleted || entries.add(record.recipient))
-}
+class Follows {
 
-async function get(did){
-  return datastore.queryFollows({ recipient: did, latestRecord: true })
-}
+  cursor = null;
+  entries = [];
 
-async function toggle (did){
-  let state = !entries.has(did);
-  await datastore.toggleFollow(did, state);
-  state ? entries.add(did) : entries.delete(did);
-  DOM.fireEvent(document, 'follow-change', {
-    detail: {
-      did: did,
-      following: state
-    }
-  });
-  notify.success(state ? 'Follow added' : 'Follow removed');
-  return state;
-}
-
-document.addEventListener('follow-change', e => {
-  const did = e.detail.did;
-  const following = e.detail.following;
-  following ? entries.add(did) : entries.delete(did);
-  for (const instance of ProfileCard.instances) {
-    if (instance.did === did) {
-      instance.following = following;
-    }
+  static instances = {};
+  static getInstance(options) {
+    const instance = Follows.instances[options?.from || 'owner'] || (Follows.instances[options?.from || 'owner'] = new Follows(options));
+    console.log(instance);
+    return instance;
   }
-})
 
-export {
-  initialize,
-  entries,
-  fetch,
-  toggle,
-  get
+  static async checkFollow(did, options){
+    return !!(await getFollow(did, options));
+  }
+
+  constructor(options = {}){ 
+    this.options = options || {};
+    this.initialize = this.getFollows();
+  }
+
+  async getFollows(){
+    const { records, cursor } = await datastore.getFollows(this.cursor, this.options);
+    if (records.length) {
+      this.entries.push(...records);
+    }
+    this.cursor = cursor;
+  }
+
+  async getFollow(did){
+    return await getFollow(did, this.options);
+  }
+
+  async toggleFollow(did, _notify = true){
+    const record = await datastore.toggleFollow(did);
+    const state = !!record;
+    if (!state) {
+      this.entries = this.entries.filter(entry => entry.recipient !== did);
+    }
+    if (_notify) notify.success(state ? 'Follow added' : 'Follow removed');
+    return state;
+  }
 }
 
+export default Follows;
 
 
 
