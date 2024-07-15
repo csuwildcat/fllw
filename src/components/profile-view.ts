@@ -722,6 +722,7 @@ export class ProfileView extends LitElement {
           this.credentialData.verified_name = null;
         }
       }
+      this.verificationStart = false
       await this.saveCredentials();
     }
   }
@@ -776,6 +777,7 @@ export class ProfileView extends LitElement {
       await this.saveCredentials();
     }
     console.log(this.credentialData.verified_name)
+    this.verificationStart = false
   }
 
   showJobModal(job){
