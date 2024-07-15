@@ -460,6 +460,9 @@ export class ProfileView extends LitElement {
   @property({ type: Boolean, reflect: true })
   loading;
 
+  @property({ type: Boolean, reflect: true })
+  verificationStart;
+
   @property({ type: Boolean, reflect: true, attribute: 'loading-error' })
   loadingError;
 
@@ -607,6 +610,7 @@ export class ProfileView extends LitElement {
   async loadProfile(did){
     this.loaded = false;
     this.loading = true;
+    this.verificationStart = false;
     try {
       await this.context.initialize;
       this.owner = did === this.context.did;
@@ -825,6 +829,8 @@ export class ProfileView extends LitElement {
     this.qrModal.show();
   }
 
+
+
   render(){
 
     const today = new Date();
@@ -895,7 +901,7 @@ export class ProfileView extends LitElement {
       <sl-tab-group id="tabs" flex="fill" @sl-tab-show="${this.onTabShow}">
         <sl-tab slot="nav" panel="profile" ?active="${this.panel === 'profile' || nothing}">Profile</sl-tab>
         <sl-tab slot="nav" panel="stories" ?active="${this.panel === 'stories' || nothing}">Stories</sl-tab>
-        <sl-tab slot="nav" panel="identity" ?active="${this.panel === 'identity' || nothing}">Identity</sl-tab>
+        <sl-tab slot="nav" panel="identity" ?active="${this.panel === 'identity' || nothing}">Verification</sl-tab>
         <!-- <sl-tab slot="nav" panel="threads" ?active="${this.panel === 'threads' || nothing}">Threads</sl-tab> -->
         ${ !this.owner ? nothing : html`
           <sl-tab slot="nav" panel="notifications" ?active="${this.panel === 'notifications' || nothing}">Notifications</sl-tab>
@@ -992,64 +998,81 @@ export class ProfileView extends LitElement {
             }
           </div>
         </sl-tab-panel>
-
-        <sl-tab-panel id="identity_panel" name="identity" ?active="${this.panel === 'identity' || nothing}">
-          <div default-content="placeholder">
-            <small><sl-badge variant="${this.credentialData.verified_name ? 'warning' : 'primary'}" pill>✔</sl-badge></small>
-            <small>
-              <sl-badge variant="" pill>
-                <sl-badge variant="${this.credentialData.verified_name ? 'warning' : 'primary'}" pill>
-                  ${this.credentialData.verified_name ? 'Real name' : 'Not a bot'}
-                  </sl-badge>
-                <span style="display:block; width:10rem;"></span> ${this.credentialData.verified_name ? 2 : 1}/3
-              </sl-badge>
-            </small>
-            <small style="color: grey">${this.credentialData.verified_name ? 'Your real name has been verified.' :  'You have been veified to be not a bot.' }</small>
-            <h5>Orange me has 3 levels of verification.</h5>
-            <small style="margin-bottom: 0.5rem">
-              <small><sl-badge variant="primary" pill pulse>✔</sl-badge></small> &nbsp;
-              <small><sl-badge variant="${this.credentialData.verified_name ? 'warning' : ''}" style="margin-left: 2.5rem" pill pulse>✔</sl-badge></small> &nbsp;
-              <small><sl-badge variant="" style="margin-left: 2.5rem" pill pulse>✔</sl-badge></small>
-            </small>
-            <sup>
-              <a><sl-badge variant="primary" pill>Not-a-bot</sl-badge></a> >
-              <a><sl-badge variant="${this.credentialData.verified_name ? 'warning' : ''}" pill>Real name</sl-badge></a> >
-              <a><sl-badge variant="" pill>Celebrity</sl-badge></a>
-            </sup>
-            <br/> 
-            <br/> 
-            <sl-radio-group style="width: 60%;" label="" name="a" value="2">
-              <sl-radio value="1" disabled>Not-a-bot
-                <br/> 
-                <small style="color: grey">
-                  Not-a-bot lets you prove you are not a bot but a real human being
-                </small>
-              </sl-radio>
-              <br/> 
-              <sl-radio value="2" disabled>Real Name
-                <br/> 
-                <small style="color: grey" >
-                  Real name verification lets you prove your display name matches your real name
-                </small>
-              </sl-radio>
-              <br/> 
-              <sl-radio value="3" disabled>Celebrity 
-                <br/> 
-                <small style="color: grey">
-                  Celebrity verification allows you to be the recognized celebrity that goes by display name
-                </small>
-              </sl-radio>
-            </sl-radio-group>
-            <br/> 
-            <br/> 
-            ${!this.credentialData.reverify && this.credentialData.verified_name
-              ? html`<sl-button variant="default" size="small" circle>
-                  <sl-icon name="chevron-down" label="Settings" @click="${e => this.credentialEditModal.show()}"></sl-icon>
-                </sl-button>`
-              : html`<sl-button @click="${e => this.getVerified()}" variant="danger" style="width: 50%; margin-bottom: 1rem;" pill>Continue</sl-button>` 
-            }
-          </div>
-        </sl-tab-panel>
+        ${ 
+          (() => {
+            const currentVariant = this.credentialData.verified_name ? 'warning' : 'primary';
+            const currentStep = this.credentialData.verified_name ? 'Real name' : 'Not a bot';
+            const currentProgress = this.credentialData.verified_name ? 2 : 1;
+            const notAbotVariant = 'primary';
+            const realNameVariant = this.credentialData.verified_name ? 'warning' : '';
+            const statusText = this.credentialData.verified_name ? 'Your real name has been verified.' :  'You have been veified to be not a bot.';
+            const nextStep = !this.credentialData.reverify && this.credentialData.verified_name ? 'Verify Trusted' : 'Verify Real Name'
+            return html`<sl-tab-panel id="identity_panel" name="identity" ?active="${this.panel === 'identity' || nothing}">
+              <div default-content="placeholder">
+                ${!this.verificationStart 
+                  ? html`<small><sl-badge variant="${currentVariant}" pill>✔</sl-badge></small>
+                      <br/>
+                      <small>
+                        <sl-badge variant="" pill>
+                          <sl-badge variant="${currentVariant}" pill >
+                            ${currentProgress == 1 ? '' : 'Not a bot  '}${currentStep}
+                          </sl-badge>
+                          ${currentProgress == 2 ? html`<sl-badge variant="primary" pill style="margin-left: -8rem;">
+                            Not a bot
+                          </sl-badge>` : nothing}
+                          <span style="display:block; width:${12 - currentProgress*3}rem;"></span> ${currentProgress}/3
+                        </sl-badge>
+                      </small>
+                      <br/>
+                      <small style="color: grey">${statusText}</small>
+                      <br/>
+                      <sl-button @click="${e => this.verificationStart = true}" pill>${nextStep}</sl-button>` 
+                  : html`<h5>Fllw has 3 levels of verification.</h5>
+                      <small style="margin-bottom: 0.5rem">
+                        <small><sl-badge variant="${notAbotVariant}" pill pulse>✔</sl-badge></small> &nbsp;
+                        <small><sl-badge variant="${realNameVariant}" style="margin-left: 2.5rem" pill pulse>✔</sl-badge></small> &nbsp;
+                        <small><sl-badge variant="" style="margin-left: 2.5rem" pill pulse>✔</sl-badge></small>
+                      </small>
+                      <sup>
+                        <a><sl-badge variant="${notAbotVariant}" pill>Not-a-bot</sl-badge></a> >
+                        <a><sl-badge variant="${realNameVariant}" pill>Real name</sl-badge></a> >
+                        <a><sl-badge variant="" pill>Trusted</sl-badge></a>
+                      </sup>
+                      <br/> 
+                      <br/> 
+                      <sl-radio-group style="width: 60%;" label="" name="a" value="${currentProgress + 1}">
+                        <sl-radio value="1" disabled>Not-a-bot - Free
+                          <br/> 
+                          <small style="color: grey">
+                            Not-a-bot lets you prove you are not a bot but a real human being
+                          </small>
+                        </sl-radio>
+                        <br/> 
+                        <sl-radio value="2" disabled>Real Name - Free
+                          <br/> 
+                          <small style="color: grey" >
+                            Real name verification lets you prove your display name matches your real name
+                          </small>
+                        </sl-radio>
+                        <br/> 
+                        <sl-radio value="3" disabled>Trusted - $200 
+                          <br/> 
+                          <small style="color: grey">
+                            This is the most expensive and most trustworthy level of verification available
+                          </small>
+                        </sl-radio>
+                      </sl-radio-group>
+                      <br/> 
+                      <br/> 
+                      <sl-button @click="${e => this.getVerified()}" variant="danger" style="width: 50%; margin-bottom: 1rem;" pill>Continue</sl-button>
+                      <sl-button variant="default" size="small" circle>
+                        <sl-icon name="chevron-down" label="Settings" @click="${e => this.credentialEditModal.show()}"></sl-icon>
+                      </sl-button>`
+                } 
+              </div>
+            </sl-tab-panel>`
+          })()
+        }
 
         <sl-tab-panel id="threads_panel" name="threads" ?active="${this.panel === 'threads' || nothing}">
           <ul id="threads_list"></ul>
