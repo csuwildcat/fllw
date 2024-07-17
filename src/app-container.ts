@@ -23,7 +23,6 @@ import '@vaadin/app-layout/theme/lumo/vaadin-drawer-toggle.js';
 
 import './pages/home';
 import './pages/directory.js';
-import './pages/settings.js';
 import './pages/profile.js';
 import './pages/story.js';
 import './pages/stories.js';
@@ -304,7 +303,7 @@ export class AppContainer extends AppContextMixin(SpinnerMixin(LitElement)) {
           font-size: 1em;
         }
 
-        #global_nav a sl-icon {
+        #global_nav a sl-icon, #global_nav a sl-avatar {
           margin: 0 0.4em 0 0;
         }
 
@@ -498,10 +497,6 @@ export class AppContainer extends AppContextMixin(SpinnerMixin(LitElement)) {
         {
           path: '/profiles/:did/stories/:story?',
           component: '#story'
-        },
-        {
-          path: '/settings',
-          component: '#settings'
         }
       ]
     });
@@ -621,18 +616,13 @@ export class AppContainer extends AppContextMixin(SpinnerMixin(LitElement)) {
             </a>
           `
         }
-        <a href="/settings" ?active="${location.pathname.match('settings')}">
-          <sl-icon slot="prefix" name="gear"></sl-icon>
-          <div>Settings</div>
-        </a>
       </nav>
 
       <main>
-        <page-home id="home" scroll></page-home>
+        <page-home id="home" did="${this.context.did || nothing}" scroll></page-home>
         <page-directory id="directory" scroll></page-directory>
         <page-stories id="stories" scroll></page-stories>   
         <page-story id="story" scroll></page-story>
-        <page-settings id="settings" scroll></page-settings>
         <page-profile id="profile" did="${this.context.did || nothing}" scroll></page-profile>
       </main>
 

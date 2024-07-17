@@ -1,5 +1,5 @@
 
-import { notify } from './helpers.js';
+import { notify, natives } from './helpers.js';
 
 async function getFollow(did, options) {
   const response = await datastore.queryFollows(Object.assign({
@@ -8,15 +8,17 @@ async function getFollow(did, options) {
   return response.records[0];
 }
 
-class Follows {
+let ownerInstance;
+
+class Follows extends EventTarget {
 
   cursor = null;
   entries = [];
+  aggregators = {};
 
   static instances = {};
-  static getInstance(options) {
-    const instance = Follows.instances[options?.from || 'owner'] || (Follows.instances[options?.from || 'owner'] = new Follows(options));
-    console.log(instance);
+  static getInstance(options) { 
+    const instance = options?.from ? new Follows(options) : ownerInstance || (ownerInstance = new Follows(options));
     return instance;
   }
 
@@ -24,7 +26,8 @@ class Follows {
     return !!(await getFollow(did, options));
   }
 
-  constructor(options = {}){ 
+  constructor(options = {}){
+    super(); 
     this.options = options || {};
     this.initialize = this.getFollows();
   }
@@ -32,9 +35,17 @@ class Follows {
   async getFollows(){
     const { records, cursor } = await datastore.getFollows(this.cursor, this.options);
     if (records.length) {
+      if (this === ownerInstance) {
+        Promise.all(records.map(async record => {
+          const data = await record.data?.json?.()
+          const aggregator = data?.aggregators?.[0];
+          (this.aggregators[aggregator] || (this.aggregators[aggregator] = []))[record.author]
+        }))
+      }
       this.entries.push(...records);
     }
     this.cursor = cursor;
+    this.dispatchEvent(new CustomEvent('follows-loaded', { detail: { records, cursor } }));
   }
 
   async getFollow(did){

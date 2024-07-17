@@ -130,6 +130,41 @@ const natives = {
         hash: match.hash.input
       }
     }
+  },
+  worker (code, reusable = false) {
+    const blob = new Blob([`
+      self.onmessage = function(e) {
+        const { data, code } = e.data;
+        const execute = new Function('data', code);
+        try {
+          const result = execute(data);
+          self.postMessage({ result });
+        }
+        catch (error) {
+          self.postMessage({ error: error.message });
+        }
+      }
+    `], { type: 'application/javascript' });
+    const blobURL = URL.createObjectURL(blob);
+    const worker = new Worker(blobURL);
+    return {
+      run: function(data){
+        return new Promise((resolve, reject) => {
+          worker.onmessage = function(e) {
+            if (e.data.error) {
+              reject(new Error(e.data.error));
+            }
+            else resolve(e.data.result);
+            if (!reusable) this.terminate();
+          };
+          worker.postMessage({ data, code });
+        })
+      },
+      terminate: function() {
+        worker.terminate();
+        URL.revokeObjectURL(blobURL);
+      }
+    }
   }
 }
 

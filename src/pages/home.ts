@@ -17,7 +17,8 @@ export class PageHome extends SpinnerMixin(LitElement) {
   @property({ type: Object })
   context;
 
-  #did = null;
+  @property({ type: String })
+  did;
 
   static styles = [
     PageStyles,
@@ -48,14 +49,17 @@ export class PageHome extends SpinnerMixin(LitElement) {
     `
   ]
 
-  async firstUpdated(){
-    this.startSpinner(null, { renderImmediate: true });
-    await this.context.initialize;
-    this.follows = Follows.getInstance();
-    await this.follows.initialize;
-    this.requestUpdate();
-    this.stopSpinner();
-    console.log(this.follows);
+  async willUpdate(props) {
+    if (props.has('did') && this.did) {
+      this.startSpinner(null, { renderImmediate: true });
+      await this.context.initialize;
+      this.follows = Follows.getInstance();
+      this.follows.addEventListener('follows-loaded', e => {
+        console.log(this.follows.aggregators);
+      })
+      await this.follows.initialize;
+      this.stopSpinner();
+    }
   }
 
   // getPostsAfter(){

@@ -22,6 +22,7 @@ class Datastore {
   }
 
   constructor(options){
+    this.options = options;
     this.did = options.did;
     this.dwn = options.web5.dwn;
     this.ready = this.installProtocols();
@@ -30,12 +31,21 @@ class Datastore {
   async installProtocols(){
     const installed = await this.dwn.protocols.query({ message: {} });
     const configurationPromises = [];
+    if (this.options.aggregator) {
+      const structure = protocols.social.definition.structure;
+      structure.story['$actions'] = structure.thread['$actions'] = [
+        {
+          who: 'anyone',
+          can: ['create', 'update', 'delete']
+        }
+      ]
+    }
     try {
       for (let z in protocols.byUri) {
         let record = installed.protocols.find(record => z === record.definition.protocol);
         let definition = protocols.byUri[z].definition;
         let appDef = natives.canonicalize(definition);
-        let configuredDef = natives.canonicalize(record.definition || null);
+        let configuredDef = natives.canonicalize(record?.definition || null);
         if (appDef !== configuredDef) {
           console.log('installing protocol: ' + z);
           configurationPromises.push(this.dwn.protocols.configure({
@@ -165,6 +175,40 @@ class Datastore {
     return response;
   }
 
+  async getAggregators(options = {}){
+    options.latestRecord = true;
+    const { records } = await this.queryProtocolRecords('social', 'aggregators', options)
+    const record = records[0];
+    if (record) {
+      await cacheJson(record);
+    }
+    return record;
+  }
+
+  async setAggregators(data, options = {}){
+    let record;
+    try {
+      record = await this.getAggregators(options);
+      if (record) await record.update({ data });
+      else {
+        const response = await this.createProtocolRecord('social', 'aggregators', {
+          published: true,
+          data,
+          dataFormat: 'application/json'
+        });
+        record = response.record;
+      }
+      const { status } = await record.send(options.from);
+    }
+    catch(e) {
+      console.log(e);
+    }
+    if (record) {
+      await cacheJson(record);
+    }
+    return record;
+  }
+
   async createSocial(options = {}) {
     const { record, status } = await this.createProtocolRecord('profile', 'social', {
       published: true,
@@ -215,7 +259,6 @@ class Datastore {
       if (cached) return cached;
     }
     const record = await this.getProfileImage(type, options);
-    console.log(record);
     if (record) {
       const drl = await natives.drl.fromRecord(record, true);
       record.cache = {
@@ -405,10 +448,13 @@ class Datastore {
 
   async toggleFollow(did, follow){
     var {records, status} = await datastore.queryFollows({ recipient: did })
-    console.log(records);
     var record = records[0];
     if (!record) {
-      var { record } = await datastore.createProtocolRecord('social', 'follow', { recipient: did })
+      const aggregatorRecord = await datastore.getAggregators({ from: did });
+      var { record } = await datastore.createProtocolRecord('social', 'follow', { recipient: did, data: {
+        aggregators: aggregatorRecord?.cache?.json?.aggregators || [],
+        lastAggregatorFetch: aggregatorRecord?.dateModified || null
+      }})
     }
     else if (record?.isDeleted) {
       record.update();

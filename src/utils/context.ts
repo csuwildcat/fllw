@@ -42,17 +42,24 @@ export const AppContextMixin = (BaseClass) => class extends BaseClass {
   }
 
   async getIdentity(_did, loadProfile){
-    const { web5, did } = await Web5.connect({
-      techPreview: {
-        dwnEndpoints: ['http://localhost:3000']
+    let options = {};
+    // Literally the most janky testing hardcoded shit ever, remove soon and wash mouth out with soap
+    const isAggregator = location.host === 'localhost:5557';
+    if (!isAggregator) {
+      options = {
+        techPreview: {
+          dwnEndpoints: ['http://localhost:3000']
+        }
       }
-    });
+    }
+    const { web5, did } = await Web5.connect(options);
     console.log(did);
     globalThis.web5 = web5;
     globalThis.userDID = this.context.did = did;
     globalThis.datastore = new Datastore({
       web5,
-      did
+      did,
+      aggregator: isAggregator
     });
     if (loadProfile) {
       await this.loadProfile(did);
@@ -76,7 +83,10 @@ export const AppContextMixin = (BaseClass) => class extends BaseClass {
         jobs: [],
         skills: [],
         education: [],
-      }, from: did })
+      }, from: did }),
+      await datastore.getAggregators({ from: did }) || datastore.setAggregators({
+        aggregators: ['did:dht:jmhez31aa4qauzy78ynd6ffme6hsxk8axyo9f41z67cpuj6atkro']
+      })
     ])
     this.updateState({
       did,
