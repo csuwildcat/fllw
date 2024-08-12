@@ -55,7 +55,7 @@ export class PageHome extends SpinnerMixin(LitElement) {
       await this.context.initialize;
       this.follows = Follows.getInstance();
       this.follows.addEventListener('follows-loaded', e => {
-        console.log(this.follows.aggregators);
+        //console.log(this.follows.aggregators);
       })
       await this.follows.initialize;
       this.stopSpinner();

@@ -306,6 +306,11 @@ function cancelNavigation(){
   activeNavigation = null;
 }
 
+async function getComposedLink(did, path) {
+  const endpoints = await getDwnEndpoints(did);
+  return endpoints[0] ? `${endpoints[0].replace(trailingSlashRegex, '')}/${did}/${path}` : null;
+}
+
 let activeNavigation;
 let linkFeaturesActive = false;
 function addLinkFeatures(){
@@ -357,15 +362,23 @@ function addLinkFeatures(){
       if ((event.pointerType === 'mouse' && event.button === 2) ||
           (event.pointerType === 'touch' && event.isPrimary)) {
         resetContextMenuTarget();
-        if (target && target?.src?.match(didUrlRegex)) {
+        const prop = target?.src ? 'src' : target?.href ? 'href' : null;
+        const match = target[prop]?.match(didUrlRegex);
+        if (prop) {
           contextMenuTarget = target;
-          target.__src__ = target.src;
-          const drl = target.src.replace(httpToHttpsRegex, 'https:').replace(trailingSlashRegex, '');
-          const responseCache = await caches.open('drl');
-          const response = await responseCache.match(drl);
-          const url = response.headers.get('dwn-composed-url');
-          if (url) target.src = url;
-          target.addEventListener('pointerup', resetContextMenuTarget, { once: true });
+          target.__link__ = target[prop];
+          if (prop === 'href') {
+            target.href = 'about:blank'
+            getComposedLink(match[1], match[2]);
+          }
+          if (prop === 'src') {  
+            const drl = target.src.replace(httpToHttpsRegex, 'https:').replace(trailingSlashRegex, '');
+            const responseCache = await caches.open('drl');
+            const response = await responseCache.match(drl);
+            const url = response.headers.get('dwn-composed-url');
+            if (url) target.src = url;
+            target.addEventListener('pointerup', resetContextMenuTarget, { once: true });
+          }
         }
       }
       else if (target === contextMenuTarget) {
@@ -383,8 +396,8 @@ async function resetContextMenuTarget(e?: any){
     await new Promise(r => requestAnimationFrame(r));
   }
   if (contextMenuTarget) {
-    contextMenuTarget.src = contextMenuTarget.__src__;
-    delete contextMenuTarget.__src__;
+    contextMenuTarget.src = contextMenuTarget.__link__;
+    delete contextMenuTarget.__link__;
     contextMenuTarget = null;
   }
 }

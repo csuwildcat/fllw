@@ -1,6 +1,6 @@
 import { createContext, provide } from '@lit/context';
 
-import { Web5 } from '@web5/api';
+import { Web5  } from '@web5/api';
 import { Datastore } from './datastore.js';
 
 const initialState = {
@@ -53,7 +53,6 @@ export const AppContextMixin = (BaseClass) => class extends BaseClass {
       }
     }
     const { web5, did } = await Web5.connect(options);
-    console.log(did);
     globalThis.web5 = web5;
     globalThis.userDID = this.context.did = did;
     globalThis.datastore = new Datastore({

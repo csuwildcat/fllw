@@ -153,9 +153,10 @@ export class StoryItem extends LitElement {
     const data = this.record.cache.json;
     const node = markdown.render(data.markdown || '');
     Array.from(node.children).slice(3).forEach(child => child.remove())
+    const imgSrc = data.hero ? `https://dweb/${this.record.author}/records/${data.hero}` : nothing;
     return html`
       <a href="profiles/${this.record.author}/stories/${this.record.id}" flex>
-        <w5-img src="https://dweb/${this.record.author}/records/${data.hero}"></w5-img>
+        <w5-img src="${imgSrc}"></w5-img>
         ${node}
       </a>
       ${

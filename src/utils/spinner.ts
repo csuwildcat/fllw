@@ -2,8 +2,6 @@ import { css, unsafeCSS } from 'lit';
 import { DOM } from './helpers.js';
 import '../components/global.js'
 
-console.log(this);
-
 const transitionDuration = 300;
 
 export const SpinnerStyles = css`
