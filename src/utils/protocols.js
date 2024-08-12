@@ -43,8 +43,6 @@ const socialDefinition = {
       $role: true
     },
     story: {
-      did:dht:alice/dwn/protocols/https://areweweb5yet.com/protocols/social/story/media
-      did:plc:alice/bpds/
       media: {
         $actions: [
           {
